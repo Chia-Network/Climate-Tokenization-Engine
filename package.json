@@ -17,7 +17,11 @@
   },
   "homepage": "https://github.com/Chia-Network/Climate-Portal#readme",
   "dependencies": {
+    "body-parser": "^1.20.0",
     "express": "^4.18.1",
-    "http-proxy-middleware": "^2.0.6"
+    "express-joi-validation": "^5.0.1",
+    "http-proxy-middleware": "^2.0.6",
+    "joi": "^17.6.1",
+    "lodash": "^4.17.21"
   }
 }
