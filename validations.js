@@ -1,9 +1,7 @@
-import Joi from "joi";
+const Joi = require("joi");
 
 const connectToOrgSchema = Joi.object({
-    orgUid: Joi.string().required(),
-  })
+  orgUid: Joi.string().required(),
+});
 
-export {
-  connectToOrgSchema
-};
+module.exports = { connectToOrgSchema };

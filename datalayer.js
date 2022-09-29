@@ -1,8 +1,8 @@
-import request from "request-promise";
-import fs from "fs";
-import os from "os";
-import path from "path";
-import https from "https";
+const request = require("request-promise");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const https = require("https");
 
 const getBaseOptions = () => {
   const homeDir = os.homedir();
@@ -58,4 +58,4 @@ const getStoreIds = async (orgUid) => {
   }
 };
 
-export { getStoreIds };
+module.exports = { getStoreIds };

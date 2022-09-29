@@ -24,6 +24,5 @@
     "joi": "^17.6.1",
     "lodash": "^4.17.21",
     "request-promise": "^4.2.6"
-  },
-  "type": "module"
+  }
 }
