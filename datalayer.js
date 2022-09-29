@@ -30,7 +30,7 @@ const getBaseOptions = () => {
   return baseOptions;
 };
 
-const getStoreIds = async () => {
+const getStoreIds = async (orgUid) => {
   try {
     const baseOptions = getBaseOptions();
 
@@ -39,7 +39,7 @@ const getStoreIds = async () => {
       url: "https://localhost:8562/get_owned_stores",
       method: "post",
       body: JSON.stringify({
-        id: "a92f96e3d6e893f23ac6783e289495d5e9821df3ee5962a9fea5fdfdcc5048f1",
+        id: orgUid,
       }),
       headers: { "Content-Type": "application/json" },
     };

@@ -49,8 +49,8 @@ app.post(
   "/connect",
   validator.body(schemas.connectToOrgSchema),
   async (req, res) => {
-    const storeIds = await getStoreIds();
     const orgUid = req.body.orgUid;
+    const storeIds = await getStoreIds(orgUid);
     const isOrgUidIncludedInStoreIds = storeIds.some(
       (storeId) => storeId === orgUid
     );
