@@ -1,7 +1,7 @@
 const Joi = require("joi");
 
-module.exports = {
-  connectToOrgSchema: Joi.object({
-    orgUid: Joi.string().required(),
-  }),
-};
+const connectToOrgSchema = Joi.object({
+  orgUid: Joi.string().required(),
+});
+
+module.exports = { connectToOrgSchema };

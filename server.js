@@ -9,7 +9,8 @@ const http = require("http");
 
 const validator = joiExpress.createValidator({ passError: true });
 
-const schemas = require("./validations");
+const { connectToOrgSchema } = require("./validations.js");
+const { getStoreIds } = require("./datalayer.js");
 
 const app = express();
 const port = 31311;
@@ -44,13 +45,23 @@ app.use(
   })
 );
 
-app.post("/connect", validator.body(schemas.connectToOrgSchema), (req, res) => {
-  // Call datalayer get_owned_stores to get all your owned stores
-  // check if this orgUid matches one of those entries
-  // if no match return 404
-  // if match save orgUid to db and use as homeOrg
+app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   const orgUid = req.body.orgUid;
-  res.send("Not Yet Implemented");
+  try {
+    const storeIds = await getStoreIds(orgUid);
+
+    if (storeIds.includes(req.body.orgUid)) {
+      // if match save orgUid to db and use as homeOrg
+      res.json({ message: "successfully connected" });
+    } else {
+      throw new Error("orgUid not found");
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: "Error connecting orgUid",
+      error: error.message,
+    });
+  }
 });
 
 app.get("/tokenize", (req, res) => {
