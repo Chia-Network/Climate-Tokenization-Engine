@@ -1,15 +1,16 @@
 "use strict";
 
-const _ = require("lodash");
-const express = require("express");
-const joiExpress = require("express-joi-validation");
-const bodyParser = require("body-parser");
-const { createProxyMiddleware } = require("http-proxy-middleware");
-const http = require("http");
+import _ from "lodash";
+import express from "express";
+import joiExpress from "express-joi-validation";
+import bodyParser from "body-parser";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import http from "http";
 
 const validator = joiExpress.createValidator({ passError: true });
 
-const schemas = require("./validations");
+import * as schemas from "./validations.js";
+import { getStoreIds } from "./datalayer.js";
 
 const app = express();
 const port = 31311;
@@ -44,14 +45,24 @@ app.use(
   })
 );
 
-app.post("/connect", validator.body(schemas.connectToOrgSchema), (req, res) => {
-  // Call datalayer get_owned_stores to get all your owned stores
-  // check if this orgUid matches one of those entries
-  // if no match return 404
-  // if match save orgUid to db and use as homeOrg
-  const orgUid = req.body.orgUid;
-  res.send("Not Yet Implemented");
-});
+app.post(
+  "/connect",
+  validator.body(schemas.connectToOrgSchema),
+  async (req, res) => {
+    const storeIds = await getStoreIds();
+    const orgUid = req.body.orgUid;
+    const isOrgUidIncludedInStoreIds = storeIds.some(
+      (storeId) => storeId === orgUid
+    );
+
+    if (isOrgUidIncludedInStoreIds) {
+      // if match save orgUid to db and use as homeOrg
+      res.status(200).send("Org uid found, hurray!");
+    } else {
+      res.status(404).send("Not found.");
+    }
+  }
+);
 
 app.get("/tokenize", (req, res) => {
   res.send("Not Yet Implemented");
