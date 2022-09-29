@@ -47,16 +47,20 @@ app.use(
 
 app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   const orgUid = req.body.orgUid;
-  const storeIds = await getStoreIds(orgUid);
-  const isOrgUidIncludedInStoreIds = storeIds.some(
-    (storeId) => storeId === orgUid
-  );
+  try {
+    const storeIds = await getStoreIds(orgUid);
 
-  if (isOrgUidIncludedInStoreIds) {
-    // if match save orgUid to db and use as homeOrg
-    res.status(200).send("Org uid found, hurray!");
-  } else {
-    res.status(404).send("Not found.");
+    if (storeIds.includes(req.body.orgUid)) {
+      // if match save orgUid to db and use as homeOrg
+      res.json({ message: "successfully connected" });
+    } else {
+      throw new Error("orgUid not found");
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: "Error connecting orgUid",
+      error: error.message,
+    });
   }
 });
 
