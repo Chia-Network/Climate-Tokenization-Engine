@@ -35,9 +35,13 @@ const getConfig = _.memoize(() => {
 });
 
 const updateConfig = (updates) => {
-  const currentConfig = getConfig();
-  const updatedConfig = { ...currentConfig, ...updates };
-  fs.writeFileSync(configFilePath, yaml.dump(updatedConfig), "utf8");
+  try {
+    const currentConfig = getConfig();
+    const updatedConfig = { ...currentConfig, ...updates };
+    fs.writeFileSync(configFilePath, yaml.dump(updatedConfig), "utf8");
+  } catch (e) {
+    console.log(`Could not update config file`, e);
+  }
 };
 
 module.exports = { getConfig, updateConfig };

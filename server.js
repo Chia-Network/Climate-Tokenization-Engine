@@ -9,15 +9,14 @@ const http = require("http");
 
 const validator = joiExpress.createValidator({ passError: true });
 
-const { updateConfig } = require("./utils/config-loader");
+const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
 
 const app = express();
 const port = 31311;
 
-// TODO: create config.yaml to set this
-const registryHost = "http://localhost:31310";
+const CONFIG = getConfig();
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -25,7 +24,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
   `/units/tokenized`,
   createProxyMiddleware({
-    target: registryHost,
+    target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
     pathRewrite: {
@@ -37,7 +36,7 @@ app.use(
 app.use(
   `/units/untokenized`,
   createProxyMiddleware({
-    target: registryHost,
+    target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
     pathRewrite: {
