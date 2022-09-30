@@ -9,6 +9,7 @@ const http = require("http");
 
 const validator = joiExpress.createValidator({ passError: true });
 
+const { updateConfig } = require("./utils/config-loader");
 const { connectToOrgSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
 
@@ -50,8 +51,8 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   try {
     const storeIds = await getStoreIds(orgUid);
 
-    if (storeIds.includes(req.body.orgUid)) {
-      // if match save orgUid to db and use as homeOrg
+    if (storeIds.includes(orgUid)) {
+      updateConfig({ HOME_ORG: orgUid });
       res.json({ message: "successfully connected" });
     } else {
       throw new Error("orgUid not found");
