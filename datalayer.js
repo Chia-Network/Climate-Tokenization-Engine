@@ -4,6 +4,9 @@ const os = require("os");
 const path = require("path");
 const https = require("https");
 
+const { getConfig } = require("./utils/config-loader");
+const CONFIG = getConfig();
+
 const getBaseOptions = () => {
   const homeDir = os.homedir();
 
@@ -36,7 +39,7 @@ const getStoreIds = async (orgUid) => {
 
     const fetchOptions = {
       ...baseOptions,
-      url: "https://localhost:8562/get_owned_stores",
+      url: `${CONFIG.DATALAYER_URL}/get_owned_stores`,
       method: "post",
       body: JSON.stringify({
         id: orgUid,
