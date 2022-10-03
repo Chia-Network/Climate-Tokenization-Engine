@@ -21,14 +21,30 @@ const CONFIG = getConfig();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+const updateQueryWithParam = (query, param, value) => {
+  const currentParams = new URLSearchParams(query);
+  currentParams.append(param, value);
+  const newParams = currentParams.toString();
+  return `?${newParams}`;
+};
+
 app.use(
   `/units/tokenized`,
   createProxyMiddleware({
     target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
-    pathRewrite: {
-      [`/units/tokenized`]: "/v1/units?hasMarketplaceIdentifier=true",
+    pathRewrite: async function (path, req) {
+      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+
+      const newQuery = updateQueryWithParam(
+        currentUrl.search,
+        "hasMarketplaceIdentifier",
+        true
+      );
+
+      const newPath = "/v1/units" + newQuery;
+      return newPath;
     },
   })
 );
@@ -39,8 +55,17 @@ app.use(
     target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
-    pathRewrite: {
-      [`/units/untokenized`]: "/v1/units?hasMarketplaceIdentifier=false",
+    pathRewrite: async function (path, req) {
+      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+
+      const newQuery = updateQueryWithParam(
+        currentUrl.search,
+        "hasMarketplaceIdentifier",
+        false
+      );
+
+      const newPath = "/v1/units" + newQuery;
+      return newPath;
     },
   })
 );
