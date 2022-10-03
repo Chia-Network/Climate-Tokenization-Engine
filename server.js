@@ -27,8 +27,13 @@ app.use(
     target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
-    pathRewrite: {
-      [`/units/tokenized`]: "/v1/units?hasMarketplaceIdentifier=true",
+    pathRewrite: async function (path, req) {
+      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const currentParams = new URLSearchParams(currentUrl.search);
+      currentParams.append("hasMarketplaceIdentifier", true);
+      const newParams = currentParams.toString();
+      const newPath = "/v1/units?" + newParams;
+      return newPath;
     },
   })
 );
@@ -39,8 +44,13 @@ app.use(
     target: CONFIG.REGISTRY_HOST,
     changeOrigin: true,
     secure: false,
-    pathRewrite: {
-      [`/units/untokenized`]: "/v1/units?hasMarketplaceIdentifier=false",
+    pathRewrite: async function (path, req) {
+      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const currentParams = new URLSearchParams(currentUrl.search);
+      currentParams.append("hasMarketplaceIdentifier", false);
+      const newParams = currentParams.toString();
+      const newPath = "/v1/units?" + newParams;
+      return newPath;
     },
   })
 );
