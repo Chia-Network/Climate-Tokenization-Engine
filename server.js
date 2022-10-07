@@ -21,11 +21,13 @@ const CONFIG = getConfig();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-const updateQueryWithParam = (query, param, value) => {
+const updateQueryWithParam = (query, ...params) => {
   const currentParams = new URLSearchParams(query);
-  if (param) {
-    currentParams.append(param, value);
-  }
+  params.forEach((paramItem) => {
+    if (paramItem) {
+      currentParams.append(paramItem.param, paramItem.value);
+    }
+  });
   const newParams = currentParams.toString();
   return `?${newParams}`;
 };
@@ -41,8 +43,14 @@ app.use(
 
       const newQuery = updateQueryWithParam(
         currentUrl.search,
-        "hasMarketplaceIdentifier",
-        true
+        {
+          param: "hasMarketplaceIdentifier",
+          value: true,
+        },
+        {
+          param: "orgUid",
+          value: CONFIG.HOME_ORG,
+        }
       );
 
       const newPath = "/v1/units" + newQuery;
@@ -59,7 +67,13 @@ app.use(
     secure: false,
     pathRewrite: async function (path, req) {
       const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
-      const newPath = "/v1/projects" + currentUrl.search;
+
+      const newQuery = updateQueryWithParam(currentUrl.search, {
+        param: "orgUid",
+        value: CONFIG.HOME_ORG,
+      });
+
+      const newPath = "/v1/projects" + newQuery;
       return newPath;
     },
   })
@@ -76,8 +90,14 @@ app.use(
 
       const newQuery = updateQueryWithParam(
         currentUrl.search,
-        "hasMarketplaceIdentifier",
-        false
+        {
+          param: "hasMarketplaceIdentifier",
+          value: false,
+        },
+        {
+          param: "orgUid",
+          value: CONFIG.HOME_ORG,
+        }
       );
 
       const newPath = "/v1/units" + newQuery;
