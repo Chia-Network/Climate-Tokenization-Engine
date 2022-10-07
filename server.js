@@ -23,7 +23,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 const updateQueryWithParam = (query, param, value) => {
   const currentParams = new URLSearchParams(query);
-  currentParams.append(param, value);
+  if (param) {
+    currentParams.append(param, value);
+  }
   const newParams = currentParams.toString();
   return `?${newParams}`;
 };
@@ -44,6 +46,20 @@ app.use(
       );
 
       const newPath = "/v1/units" + newQuery;
+      return newPath;
+    },
+  })
+);
+
+app.use(
+  `/projects`,
+  createProxyMiddleware({
+    target: CONFIG.REGISTRY_HOST,
+    changeOrigin: true,
+    secure: false,
+    pathRewrite: async function (path, req) {
+      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const newPath = "/v1/projects" + currentUrl.search;
       return newPath;
     },
   })
