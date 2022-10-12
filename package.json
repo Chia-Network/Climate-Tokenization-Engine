@@ -1,10 +1,20 @@
 {
   "name": "climate-portal",
   "version": "1.0.0",
+  "bin": "./server.js",
   "description": "",
   "main": "proxy.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --no-warnings server.js",
+    "prepare-binary": "rm -rf dist && mkdir dist",
+    "create-win-x64-dist": "pkg package.json -t node16-win-x64 --out-path dist",
+    "create-mac-x64-dist": "pkg package.json -t node16-macos-x64 --out-path dist",
+    "create-linux-x64-dist": "pkg package.json -t node16-linux-x64 --out-path dist"
+  },
+  "pkg": {
+    "scripts": "package.json",
+    "assets": "package.json"
   },
   "repository": {
     "type": "git",
