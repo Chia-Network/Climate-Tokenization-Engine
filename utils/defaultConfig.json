@@ -1,5 +1,6 @@
 {
-  "DATALAYER_URL": "https://localhost:8562",
+  "DATA_LAYER_URL": "https://localhost:8562",
   "HOME_ORG": null,
-  "REGISTRY_HOST": "http://localhost:31310"
+  "REGISTRY_HOST": "http://localhost:31310",
+  "TOKENIZE_SERVICE": "http://127.0.0.1:31313"
 }

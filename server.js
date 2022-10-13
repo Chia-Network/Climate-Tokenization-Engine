@@ -1,5 +1,6 @@
 "use strict";
 
+const request = require("request-promise");
 const _ = require("lodash");
 const express = require("express");
 const joiExpress = require("express-joi-validation");
@@ -10,7 +11,7 @@ const http = require("http");
 const validator = joiExpress.createValidator({ passError: true });
 
 const { updateConfig, getConfig } = require("./utils/config-loader");
-const { connectToOrgSchema } = require("./validations.js");
+const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
 
 const app = express();
@@ -125,8 +126,38 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   }
 });
 
-app.get("/tokenize", (req, res) => {
-  res.send("Not Yet Implemented");
+app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
+  try {
+    const tokenizeRequestOptions = {
+      url: `${CONFIG.TOKENIZE_SERVICE}/v1/tokens`,
+      method: "post",
+      body: JSON.stringify({
+        token: req.body,
+        payment: {
+          amount: 100,
+          fee: 100,
+          to_address:
+            "txch1clzn09v7lapulm7j8mwx9jaqh35uh7jzjeukpv7pj50tv80zze4s5060sx",
+        },
+      }),
+      headers: { "Content-Type": "application/json" },
+    };
+
+    const response = await request(tokenizeRequestOptions);
+    const data = JSON.parse(response);
+    
+    // console.log("tokenizeRequestOptions.body", tokenizeRequestOptions.body);
+    if (data.success) {
+      res.send("yes, yes, yes, here is data", data);
+    } else {
+      res.send("ups did not work, here is data", data);
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: "Error token could not be created",
+      error: error.message,
+    });
+  }
 });
 
 app.use((err, req, res, next) => {
