@@ -126,6 +126,29 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   }
 });
 
+const waitForTransactionToConfirm = async (transactionId, retry = 0) => {
+  if (retry <= 60) {
+    try {
+      const response = await request({
+        method: "get",
+        url: `${CONFIG.TOKENIZE_SERVICE}/v1/transactions/${transactionId}`,
+      });
+
+      const data = JSON.parse(response);
+
+      if (data?.record?.confirmed) {
+        return true;
+      } else {
+        await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+        return waitForTransactionToConfirm(transactionId, retry+1);
+      }
+    } catch (err) {
+      return false;
+    }
+  }
+  return false;
+};
+
 app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     const tokenizeRequestOptions = {
@@ -145,12 +168,19 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
 
     const response = await request(tokenizeRequestOptions);
     const data = JSON.parse(response);
-    
-    // console.log("tokenizeRequestOptions.body", tokenizeRequestOptions.body);
-    if (data.success) {
-      res.send("yes, yes, yes, here is data", data);
+
+    if (data?.tx?.id) {
+      const isTransactionConfirmed = await waitForTransactionToConfirm(
+        data?.tx?.id
+      );
+
+      if (isTransactionConfirmed) {
+        res.send("Token created successfully.");
+      } else {
+        throw new Error("Could not create token.");
+      }
     } else {
-      res.send("ups did not work, here is data", data);
+      throw new Error(data.error);
     }
   } catch (error) {
     res.status(400).json({
