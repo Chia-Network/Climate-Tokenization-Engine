@@ -165,7 +165,11 @@ const confirmTokenCreationWithTransactionId = async (
         registerTokenCreationOnClimateWarehouse(token);
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
-        confirmTokenCreationWithTransactionId(token, transactionId, retry + 1);
+        await confirmTokenCreationWithTransactionId(
+          token,
+          transactionId,
+          retry + 1
+        );
       }
     } catch (error) {
       console.log("Error token creation could not be confirmed", error.message);
@@ -199,7 +203,7 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         "Your token is being created and should be ready in a few minutes."
       );
 
-      confirmTokenCreationWithTransactionId(data.token, data.tx.id);
+      await confirmTokenCreationWithTransactionId(data.token, data.tx.id);
     } else {
       throw new Error(data.error);
     }
