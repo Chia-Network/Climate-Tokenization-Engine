@@ -126,7 +126,31 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   }
 });
 
-const waitForTransactionToConfirm = async (transactionId, retry = 0) => {
+const registerTokenCreationOnClimateWarehouse = async (token) => {
+  try {
+    const response = await request({
+      url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
+      method: "post",
+      body: JSON.stringify({
+        [token.asset_id]: token,
+      }),
+    });
+
+    const data = JSON.parse(response);
+    console.log("data", data);
+  } catch (error) {
+    console.log(
+      "Could not register token creation on climate warehouse.",
+      error.message
+    );
+  }
+};
+
+const confirmTokenCreationWithTransactionId = async (
+  token,
+  transactionId,
+  retry = 0
+) => {
   if (retry <= 60) {
     try {
       const response = await request({
@@ -135,18 +159,19 @@ const waitForTransactionToConfirm = async (transactionId, retry = 0) => {
       });
 
       const data = JSON.parse(response);
+      const isTokenCreationConfirmed = data?.record?.confirmed;
 
-      if (data?.record?.confirmed) {
-        return true;
+      if (isTokenCreationConfirmed) {
+        console.log("isTokenCreationConfirmed true");
+        registerTokenCreationOnClimateWarehouse(token);
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
-        return waitForTransactionToConfirm(transactionId, retry+1);
+        confirmTokenCreationWithTransactionId(token, transactionId, retry + 1);
       }
-    } catch (err) {
-      return false;
+    } catch (error) {
+      console.log("Error token creation could not be confirmed", error.message);
     }
   }
-  return false;
 };
 
 app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
@@ -168,17 +193,14 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
 
     const response = await request(tokenizeRequestOptions);
     const data = JSON.parse(response);
+    const isTokenCreationPending = !!data?.tx?.id;
 
-    if (data?.tx?.id) {
-      const isTransactionConfirmed = await waitForTransactionToConfirm(
-        data?.tx?.id
+    if (isTokenCreationPending) {
+      res.send(
+        "Your token is being created and should be ready in a few minutes."
       );
 
-      if (isTransactionConfirmed) {
-        res.send("Token created successfully.");
-      } else {
-        throw new Error("Could not create token.");
-      }
+      confirmTokenCreationWithTransactionId(data.token, data.tx.id);
     } else {
       throw new Error(data.error);
     }
