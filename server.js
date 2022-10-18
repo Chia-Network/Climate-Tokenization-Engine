@@ -162,7 +162,6 @@ const confirmTokenCreationWithTransactionId = async (
       const isTokenCreationConfirmed = data?.record?.confirmed;
 
       if (isTokenCreationConfirmed) {
-        console.log("isTokenCreationConfirmed true");
         registerTokenCreationOnClimateWarehouse(token);
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
