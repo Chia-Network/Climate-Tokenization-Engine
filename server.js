@@ -126,6 +126,41 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   }
 });
 
+const confirmTokenRegistrationOnWarehouse = async (
+  token,
+  transactionId,
+  retry = 0
+) => {
+  if (retry <= 60) {
+    try {
+      const response = await request({
+        method: "get",
+        url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
+      });
+
+      const data = JSON.parse(response);
+      const thereAreNoPendingTransactions = data?.confirmed;
+
+      if (thereAreNoPendingTransactions) {
+        // TODO add what to do after no transactions are pending
+        console.log("done, there are no more pending transactions");
+      } else {
+        await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+        return confirmTokenRegistrationOnWarehouse(
+          token,
+          transactionId,
+          retry + 1
+        );
+      }
+    } catch (error) {
+      console.log(
+        "Token registration on climate warehouse could not be confirmed",
+        error.message
+      );
+    }
+  }
+};
+
 const registerTokenCreationOnClimateWarehouse = async (token) => {
   try {
     const response = await request({
@@ -137,7 +172,15 @@ const registerTokenCreationOnClimateWarehouse = async (token) => {
     });
 
     const data = JSON.parse(response);
-    console.log("data", data);
+
+    if (
+      data.message ===
+      "Home org currently being updated, will be completed soon."
+    ) {
+      await confirmTokenRegistrationOnWarehouse();
+    } else {
+      console.log("Could not register token creation on climate warehouse.");
+    }
   } catch (error) {
     console.log(
       "Could not register token creation on climate warehouse.",
@@ -162,10 +205,10 @@ const confirmTokenCreationWithTransactionId = async (
       const isTokenCreationConfirmed = data?.record?.confirmed;
 
       if (isTokenCreationConfirmed) {
-        registerTokenCreationOnClimateWarehouse(token);
+        await registerTokenCreationOnClimateWarehouse(token);
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
-        await confirmTokenCreationWithTransactionId(
+        return confirmTokenCreationWithTransactionId(
           token,
           transactionId,
           retry + 1
@@ -196,7 +239,7 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
 
     const response = await request(tokenizeRequestOptions);
     const data = JSON.parse(response);
-    const isTokenCreationPending = !!data?.tx?.id;
+    const isTokenCreationPending = Boolean(data?.tx?.id);
 
     if (isTokenCreationPending) {
       res.send(
