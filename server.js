@@ -155,7 +155,7 @@ const confirmTokenCreationWithTransactionId = async (
     try {
       const response = await request({
         method: "get",
-        url: `${CONFIG.TOKENIZE_SERVICE}/v1/transactions/${transactionId}`,
+        url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/transactions/${transactionId}`,
       });
 
       const data = JSON.parse(response);
@@ -180,7 +180,7 @@ const confirmTokenCreationWithTransactionId = async (
 app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     const tokenizeRequestOptions = {
-      url: `${CONFIG.TOKENIZE_SERVICE}/v1/tokens`,
+      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens`,
       method: "post",
       body: JSON.stringify({
         token: req.body,

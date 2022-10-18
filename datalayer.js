@@ -39,7 +39,7 @@ const getStoreIds = async (orgUid) => {
 
     const fetchOptions = {
       ...baseOptions,
-      url: `${CONFIG.DATA_LAYER_URL}/get_owned_stores`,
+      url: `${CONFIG.DATA_LAYER_HOST}/get_owned_stores`,
       method: "post",
       body: JSON.stringify({
         id: orgUid,
