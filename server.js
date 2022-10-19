@@ -126,6 +126,38 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   }
 });
 
+const updateUnitMarketplaceIdentifierWithAssetId = async (
+  warehouseUnitId,
+  asset_id
+) => {
+  try {
+    const unitToBeUpdatedResponse = await request({
+      method: "get",
+      url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
+    });
+
+    const unitToBeUpdated = JSON.parse(unitToBeUpdatedResponse);
+    unitToBeUpdated.marketplaceIdentifier = asset_id;
+
+    const updateUnitResponse = await request({
+      method: "post",
+      url: `${CONFIG.REGISTRY_HOST}/v1/units`,
+      body: JSON.stringify(unitToBeUpdated),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = JSON.parse(updateUnitResponse);
+    console.log("data", data);
+
+    await request({
+      method: "post",
+      url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
+    });
+  } catch (error) {
+    console.log("Could not update unit marketplace identifier with asset id.");
+  }
+};
+
 const confirmTokenRegistrationOnWarehouse = async (
   token,
   transactionId,
@@ -142,8 +174,7 @@ const confirmTokenRegistrationOnWarehouse = async (
       const thereAreNoPendingTransactions = data?.confirmed;
 
       if (thereAreNoPendingTransactions) {
-        // TODO add what to do after no transactions are pending
-        console.log("done, there are no more pending transactions");
+        return true;
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
         return confirmTokenRegistrationOnWarehouse(
@@ -153,15 +184,16 @@ const confirmTokenRegistrationOnWarehouse = async (
         );
       }
     } catch (error) {
-      console.log(
-        "Token registration on climate warehouse could not be confirmed",
-        error.message
-      );
+      return false;
     }
   }
+  return false;
 };
 
-const registerTokenCreationOnClimateWarehouse = async (token) => {
+const registerTokenCreationOnClimateWarehouse = async (
+  token,
+  warehouseUnitId
+) => {
   try {
     const response = await request({
       url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
@@ -177,7 +209,14 @@ const registerTokenCreationOnClimateWarehouse = async (token) => {
       data.message ===
       "Home org currently being updated, will be completed soon."
     ) {
-      await confirmTokenRegistrationOnWarehouse();
+      const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
+
+      if (isTokenRegistered) {
+        await updateUnitMarketplaceIdentifierWithAssetId(
+          warehouseUnitId,
+          token.asset_id
+        );
+      }
     } else {
       console.log("Could not register token creation on climate warehouse.");
     }
@@ -205,7 +244,7 @@ const confirmTokenCreationWithTransactionId = async (
       const isTokenCreationConfirmed = data?.record?.confirmed;
 
       if (isTokenCreationConfirmed) {
-        await registerTokenCreationOnClimateWarehouse(token);
+        return true;
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 30000));
         return confirmTokenCreationWithTransactionId(
@@ -215,9 +254,10 @@ const confirmTokenCreationWithTransactionId = async (
         );
       }
     } catch (error) {
-      console.log("Error token creation could not be confirmed", error.message);
+      return false;
     }
   }
+  return false;
 };
 
 app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
@@ -226,7 +266,12 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens`,
       method: "post",
       body: JSON.stringify({
-        token: req.body,
+        token: {
+          org_uid: req.body.org_uid,
+          warehouse_project_id: req.body.warehouse_project_id,
+          vintage_year: req.body.vintage_year,
+          sequence_num: req.body.sequence_num,
+        },
         payment: {
           amount: 100,
           fee: 100,
@@ -236,7 +281,6 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       }),
       headers: { "Content-Type": "application/json" },
     };
-
     const response = await request(tokenizeRequestOptions);
     const data = JSON.parse(response);
     const isTokenCreationPending = Boolean(data?.tx?.id);
@@ -246,7 +290,17 @@ app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         "Your token is being created and should be ready in a few minutes."
       );
 
-      await confirmTokenCreationWithTransactionId(data.token, data.tx.id);
+      const isTokenCreationConfirmed =
+        await confirmTokenCreationWithTransactionId(data.token, data.tx.id);
+
+      if (isTokenCreationConfirmed) {
+        await registerTokenCreationOnClimateWarehouse(
+          data.token,
+          req.body.warehouseUnitId
+        );
+      } else {
+        console.log("Token creation could not be confirmed.");
+      }
     } else {
       throw new Error(data.error);
     }
