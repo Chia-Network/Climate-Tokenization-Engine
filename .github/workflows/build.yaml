@@ -92,7 +92,7 @@ jobs:
         with:
           certificate_path: .\win_code_sign_cert.pfx
           certificate_password: ${{ secrets.WIN_CODE_SIGN_PASSWORD }}
-          file: ${{ github.workspace }}/dist/climate-warehouse.exe
+          file: ${{ github.workspace }}/dist/climate-portal.exe
 
       # Mac .pkg build + sign
       - name: Import Apple installer signing certificate
@@ -121,23 +121,23 @@ jobs:
           cp -r ${{ github.workspace }}/dist ${{ github.workspace }}/build-scripts/macos/application
 
           echo "Signing the binaries"
-          codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp --options=runtime --entitlements ${{ github.workspace }}/build-scripts/macos/entitlements.mac.plist ${{ github.workspace }}/build-scripts/macos/application/climate-warehouse
+          codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp --options=runtime --entitlements ${{ github.workspace }}/build-scripts/macos/entitlements.mac.plist ${{ github.workspace }}/build-scripts/macos/application/climate-portal
           codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp ${{ github.workspace }}/build-scripts/macos/application/node_sqlite3.node
 
           # Makes the .pkg in ./build-scripts/macos/target/pkg
           echo "Building the .pkg"
-          bash ${{ github.workspace }}/build-scripts/macos/build-macos.sh ClimateWarehouse
+          bash ${{ github.workspace }}/build-scripts/macos/build-macos.sh ClimatePortal
 
           mkdir -p ${{ github.workspace }}/build-scripts/macos/target/pkg-signed
 
           echo "Signing the .pkg"
-          productsign --sign "Developer ID Installer: Chia Network Inc." ${{ github.workspace }}/build-scripts/macos/target/pkg/ClimateWarehouse-macos-installer-x64.pkg ${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimateWarehouse-macos-installer-x64.pkg
+          productsign --sign "Developer ID Installer: Chia Network Inc." ${{ github.workspace }}/build-scripts/macos/target/pkg/ClimatePortal-macos-installer-x64.pkg ${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimatePortal-macos-installer-x64.pkg
 
           echo "Notarizing the .pkg"
           npm install -g notarize-cli
           notarize-cli \
-            --file=${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimateWarehouse-macos-installer-x64.pkg \
-            --bundle-id net.chia.climate-warehouse \
+            --file=${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimatePortal-macos-installer-x64.pkg \
+            --bundle-id net.chia.climate-portal \
             --username "${{ secrets.APPLE_NOTARIZE_USERNAME }}" \
             --password "${{ secrets.APPLE_NOTARIZE_PASSWORD }}"
 
