@@ -70,13 +70,17 @@ jobs:
       - name: Make executable
         run: chmod +x dist/climate-portal
 
-      - name: Copy sqlite3 (non windows)
-        run: cp ./node_modules/sqlite3/build/Release/node_sqlite3.node ./dist/
-        if: matrix.runs-on != 'windows-2019'
+### If using sqlite, uncomment the following 2 sections ###
+### and add a line to sign the sqlite binaries in the   ###
+### Mac section.                                        ###
 
-      - name: Copy sqlite3 (windows)
-        run: cp .\node_modules\sqlite3\build\Release\node_sqlite3.node .\dist\
-        if: matrix.runs-on == 'windows-2019'
+#      - name: Copy sqlite3 (non windows)
+#        run: cp ./node_modules/sqlite3/build/Release/node_sqlite3.node ./dist/
+#        if: matrix.runs-on != 'windows-2019'
+
+#      - name: Copy sqlite3 (windows)
+#        run: cp .\node_modules\sqlite3\build\Release\node_sqlite3.node .\dist\
+#        if: matrix.runs-on == 'windows-2019'
 
       # Windows Code Signing
       - name: Decode code signing cert into an encrypted file
@@ -122,7 +126,6 @@ jobs:
 
           echo "Signing the binaries"
           codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp --options=runtime --entitlements ${{ github.workspace }}/build-scripts/macos/entitlements.mac.plist ${{ github.workspace }}/build-scripts/macos/application/climate-portal
-          codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp ${{ github.workspace }}/build-scripts/macos/application/node_sqlite3.node
 
           # Makes the .pkg in ./build-scripts/macos/target/pkg
           echo "Building the .pkg"
