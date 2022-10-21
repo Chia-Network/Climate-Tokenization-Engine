@@ -139,22 +139,33 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     const unitToBeUpdated = JSON.parse(unitToBeUpdatedResponse);
     unitToBeUpdated.marketplaceIdentifier = asset_id;
 
+    delete unitToBeUpdated?.issuance?.orgUid;
+    delete unitToBeUpdated.issuanceId;
+    delete unitToBeUpdated.orgUid;
+    delete unitToBeUpdated.serialNumberBlock;
+
+    Object.keys(unitToBeUpdated).forEach(function (key, index) {
+      if (this[key] == null) delete this[key];
+    }, unitToBeUpdated);
+
     const updateUnitResponse = await request({
-      method: "post",
+      method: "put",
       url: `${CONFIG.REGISTRY_HOST}/v1/units`,
       body: JSON.stringify(unitToBeUpdated),
       headers: { "Content-Type": "application/json" },
     });
 
     const data = JSON.parse(updateUnitResponse);
-    console.log("data", data);
 
     await request({
       method: "post",
       url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
     });
   } catch (error) {
-    console.log("Could not update unit marketplace identifier with asset id.", error);
+    console.log(
+      "Could not update unit marketplace identifier with asset id.",
+      error
+    );
   }
 };
 
