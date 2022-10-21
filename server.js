@@ -154,7 +154,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
     });
   } catch (error) {
-    console.log("Could not update unit marketplace identifier with asset id.");
+    console.log("Could not update unit marketplace identifier with asset id.", error);
   }
 };
 
