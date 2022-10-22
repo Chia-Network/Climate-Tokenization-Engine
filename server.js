@@ -5,6 +5,8 @@ const _ = require("lodash");
 const express = require("express");
 const joiExpress = require("express-joi-validation");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const http = require("http");
 
@@ -19,6 +21,7 @@ const port = 31311;
 
 const CONFIG = getConfig();
 
+app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -271,7 +274,7 @@ const confirmTokenCreationWithTransactionId = async (
   return false;
 };
 
-app.get("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
+app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     const tokenizeRequestOptions = {
       url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens`,
