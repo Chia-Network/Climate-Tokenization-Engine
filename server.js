@@ -83,6 +83,12 @@ app.use(
       const newPath = "/v1/units" + newQuery;
       return newPath;
     },
+    onProxyRes(proxyRes, req, res) {
+      if (CONFIG.HOME_ORG) {
+        proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
+        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+      }
+    },
   })
 );
 
@@ -102,6 +108,12 @@ app.use(
 
       const newPath = "/v1/projects" + newQuery;
       return newPath;
+    },
+    onProxyRes(proxyRes, req, res) {
+      if (CONFIG.HOME_ORG) {
+        proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
+        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+      }
     },
   })
 );
@@ -129,6 +141,12 @@ app.use(
 
       const newPath = "/v1/units" + newQuery;
       return newPath;
+    },
+    onProxyRes(proxyRes, req, res) {
+      if (CONFIG.HOME_ORG) {
+        proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
+        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+      }
     },
   })
 );
@@ -348,14 +366,6 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   }
 });
 
-app.use(function (req, res, next) {
-  if (CONFIG.HOME_ORG) {
-    res.setHeader(headerKeys.ORG_UID, CONFIG.HOME_ORG);
-  }
-
-  next();
-});
-
 app.use((err, req, res, next) => {
   if (err) {
     if (_.get(err, "error.details")) {
@@ -369,6 +379,14 @@ app.use((err, req, res, next) => {
     }
 
     return res.status(err.status).json(err);
+  }
+
+  next();
+});
+
+app.use((req, res, next) => {
+  if (CONFIG.HOME_ORG) {
+    res.setHeader(headerKeys.ORG_UID, CONFIG.HOME_ORG);
   }
 
   next();
