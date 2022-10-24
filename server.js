@@ -21,7 +21,16 @@ const port = 31311;
 
 const CONFIG = getConfig();
 
-app.use(cors());
+const headerKeys = Object.freeze({
+  ORG_UID: "x-org-uid",
+});
+
+app.use(
+  cors({
+    exposedHeaders: Object.values(headerKeys).join(","),
+  })
+);
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -303,8 +312,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         payment: {
           amount: 100,
           fee: 100,
-          to_address:
-            request.body.to_address,
+          to_address: request.body.to_address,
         },
       }),
       headers: { "Content-Type": "application/json" },
@@ -338,6 +346,14 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       error: error.message,
     });
   }
+});
+
+app.use(function (req, res, next) {
+  if (CONFIG.HOME_ORG) {
+    res.setHeader(headerKeys.ORG_UID, CONFIG.HOME_ORG);
+  }
+
+  next();
 });
 
 app.use((err, req, res, next) => {
