@@ -36,6 +36,20 @@ const updateQueryWithParam = (query, ...params) => {
   return `?${newParams}`;
 };
 
+app.use(async function (req, res, next) {
+  try {
+    if (CONFIG.HOME_ORG === null) {
+      throw new Error("Home Org does not exist.");
+    }
+    next();
+  } catch (err) {
+    res.status(400).json({
+      message: "Chia Exception",
+      error: err.message,
+    });
+  }
+});
+
 app.use(
   `/units/tokenized`,
   createProxyMiddleware({
