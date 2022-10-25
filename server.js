@@ -330,7 +330,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         payment: {
           amount: 100,
           fee: 100,
-          to_address: request.body.to_address,
+          to_address: req.body.to_address,
         },
       }),
       headers: { "Content-Type": "application/json" },
