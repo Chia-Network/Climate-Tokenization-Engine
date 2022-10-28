@@ -11,7 +11,8 @@ const tokenizeUnitSchema = Joi.object({
   vintage_year: Joi.number().required(),
   sequence_num: Joi.number().required(),
   warehouseUnitId: Joi.string().required(),
-  to_address: Joi.string().required()
+  to_address: Joi.string().required(),
+  amount: Joi.number().required(),
 });
 
 module.exports = { connectToOrgSchema, tokenizeUnitSchema };
