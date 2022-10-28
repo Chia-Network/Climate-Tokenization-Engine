@@ -11,7 +11,16 @@ const tokenizeUnitSchema = Joi.object({
   vintage_year: Joi.number().required(),
   sequence_num: Joi.number().required(),
   warehouseUnitId: Joi.string().required(),
-  to_address: Joi.string().required()
+  to_address: Joi.string().required(),
 });
 
-module.exports = { connectToOrgSchema, tokenizeUnitSchema };
+const compressedProtectedFileSchema = Joi.object({
+  file: Joi.string().required(),
+  password: Joi.string().required(),
+});
+
+module.exports = {
+  connectToOrgSchema,
+  tokenizeUnitSchema,
+  compressedProtectedFileSchema,
+};

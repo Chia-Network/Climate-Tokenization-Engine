@@ -6,6 +6,8 @@ const express = require("express");
 const joiExpress = require("express-joi-validation");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const os = require("os");
+const formData = require("express-form-data");
 
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const http = require("http");
@@ -15,22 +17,25 @@ const validator = joiExpress.createValidator({ passError: true });
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
+const { unzipAndUnlockZipFile } = require("./utils/decompress");
 
 const app = express();
 const port = 31311;
-
 const CONFIG = getConfig();
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
 });
-
 app.use(
   cors({
     exposedHeaders: Object.values(headerKeys).join(","),
   })
 );
-
+const options = {
+  uploadDir: os.tmpdir(),
+  autoClean: true,
+};
+app.use(formData.parse(options));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -361,6 +366,24 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   } catch (error) {
     res.status(400).json({
       message: "Error token could not be created",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/decompress", async (req, res) => {
+  try {
+    const password = req.body.password;
+    const filePath = req.files.file.path;
+
+    // try to decompress
+    const decompressedFile = await unzipAndUnlockZipFile(filePath, password);
+
+    // if successful return decompressed file
+    res.send(decompressedFile);
+  } catch (error) {
+    res.status(400).json({
+      message: "File could not be decompressed",
       error: error.message,
     });
   }
