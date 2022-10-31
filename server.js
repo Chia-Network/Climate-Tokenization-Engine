@@ -209,6 +209,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     await request({
       method: "post",
       url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.log(
@@ -225,6 +226,8 @@ const confirmTokenRegistrationOnWarehouse = async (
 ) => {
   if (retry <= 60) {
     try {
+      await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+
       const response = await request({
         method: "get",
         url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
@@ -259,8 +262,9 @@ const registerTokenCreationOnClimateWarehouse = async (
       url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
       method: "post",
       body: JSON.stringify({
-        [token.asset_id]: token,
+        [token.asset_id]: JSON.stringify(token),
       }),
+      headers: { "Content-Type": "application/json" },
     });
 
     const data = JSON.parse(response);
@@ -295,6 +299,8 @@ const confirmTokenCreationWithTransactionId = async (
 ) => {
   if (retry <= 60) {
     try {
+      await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+
       const response = await request({
         method: "get",
         url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/transactions/${transactionId}`,
@@ -333,7 +339,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
           sequence_num: req.body.sequence_num,
         },
         payment: {
-          amount: 100,
+          amount: (req.body.amount || 1) * 1000,
           fee: 100,
           to_address: req.body.to_address,
         },

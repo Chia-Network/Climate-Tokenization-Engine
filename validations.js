@@ -12,6 +12,7 @@ const tokenizeUnitSchema = Joi.object({
   sequence_num: Joi.number().required(),
   warehouseUnitId: Joi.string().required(),
   to_address: Joi.string().required(),
+  amount: Joi.number().required(),
 });
 
 const compressedProtectedFileSchema = Joi.object({
