@@ -15,4 +15,13 @@ const tokenizeUnitSchema = Joi.object({
   amount: Joi.number().required(),
 });
 
-module.exports = { connectToOrgSchema, tokenizeUnitSchema };
+const compressedProtectedFileSchema = Joi.object({
+  file: Joi.string().required(),
+  password: Joi.string().required(),
+});
+
+module.exports = {
+  connectToOrgSchema,
+  tokenizeUnitSchema,
+  compressedProtectedFileSchema,
+};
