@@ -7,9 +7,9 @@ const unzipAndUnlockZipFile = async (filepath, password) => {
 
     const extracted = await file.buffer(password);
 
-    return extracted;
+    return extracted.toString();
   } catch {
-    throw new Error("Could not decompress file.");
+    throw new Error("Could not decompress protected file.");
   }
 };
 

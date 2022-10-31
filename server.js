@@ -371,19 +371,40 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   }
 });
 
-app.post("/decompress", async (req, res) => {
+const sendDetokenizeRequest = async (detokString) => {
+  try {
+    const url = `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    const data = JSON.parse(response);
+    return data;
+  } catch (error) {
+    throw new Error(`Detokenize api could not process request: ${error}`);
+  }
+};
+
+app.post("/detokenize", async (req, res) => {
   try {
     const password = req.body.password;
     const filePath = req.files.file.path;
 
-    // try to decompress
-    const decompressedFile = await unzipAndUnlockZipFile(filePath, password);
+    const detokString = await unzipAndUnlockZipFile(filePath, password);
+    const detokStringkIsValid =
+      typeof detokString === "string" && detokString.startsWith("detok");
+    if (!detokStringkIsValid) {
+      throw new Error("Uploaded file not valid.");
+    }
 
-    // if successful return decompressed file
-    res.send(decompressedFile);
+    const detokenizeRequestResponse = await sendDetokenizeRequest(detokString);
+    console.log("detokenizeRequestResponse", detokenizeRequestResponse);
+
+    res.send(detokenizeRequestResponse);
   } catch (error) {
     res.status(400).json({
-      message: "File could not be decompressed",
+      message: "File could not be detokenized.",
       error: error.message,
     });
   }
