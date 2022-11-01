@@ -377,7 +377,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   }
 });
 
-const sendDetokenizeRequest = async (detokString) => {
+const sendParseDetokRequest = async (detokString) => {
   try {
     const url = `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
     const response = await request({
@@ -392,22 +392,44 @@ const sendDetokenizeRequest = async (detokString) => {
   }
 };
 
-app.post("/detokenize", async (req, res) => {
+const getTokenizedUnitByAssetId = async (assetId) => {
+  try {
+    const url = `${CONFIG.REGISTRY_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    return response;
+  } catch (err) {
+    throw new Error(`Could not get tokenized unit by asset id. ${err}`);
+  }
+};
+
+app.post("/parse-detok-file", async (req, res) => {
   try {
     const password = req.body.password;
     const filePath = req.files.file.path;
 
-    const detokString = await unzipAndUnlockZipFile(filePath, password);
+    let detokString = await unzipAndUnlockZipFile(filePath, password);
+    detokString = detokString.replace(/(\r\n|\n|\r)/gm, "");
     const detokStringkIsValid =
       typeof detokString === "string" && detokString.startsWith("detok");
     if (!detokStringkIsValid) {
       throw new Error("Uploaded file not valid.");
     }
 
-    const detokenizeRequestResponse = await sendDetokenizeRequest(detokString);
-    console.log("detokenizeRequestResponse", detokenizeRequestResponse);
+    const parseDetokResponse = await sendParseDetokRequest(detokString);
+    const isDetokParsed = Boolean(parseDetokResponse?.token?.asset_id);
+    if (!isDetokParsed) {
+      throw new Error("Could not parse detok file properly.");
+    }
 
-    res.send(detokenizeRequestResponse);
+    const unitToBeDetokenized = await getTokenizedUnitByAssetId(
+      parseDetokResponse?.token?.asset_id
+    );
+
+    res.send(unitToBeDetokenized);
   } catch (error) {
     res.status(400).json({
       message: "File could not be detokenized.",
