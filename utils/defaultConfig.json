@@ -2,5 +2,6 @@
   "DATA_LAYER_HOST": "https://localhost:8562",
   "HOME_ORG": null,
   "REGISTRY_HOST": "http://localhost:31310",
-  "TOKENIZE_DRIVER_HOST": "http://127.0.0.1:31313"
+  "TOKENIZE_DRIVER_HOST": "http://127.0.0.1:31313",
+  "DEFAULT_FEE": 100
 }
