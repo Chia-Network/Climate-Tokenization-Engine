@@ -6,6 +6,8 @@ const express = require("express");
 const joiExpress = require("express-joi-validation");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const os = require("os");
+const formData = require("express-form-data");
 
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const http = require("http");
@@ -15,22 +17,25 @@ const validator = joiExpress.createValidator({ passError: true });
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
+const { unzipAndUnlockZipFile } = require("./utils/decompress");
 
 const app = express();
 const port = 31311;
-
 const CONFIG = getConfig();
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
 });
-
 app.use(
   cors({
     exposedHeaders: Object.values(headerKeys).join(","),
   })
 );
-
+const options = {
+  uploadDir: os.tmpdir(),
+  autoClean: true,
+};
+app.use(formData.parse(options));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -367,6 +372,126 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   } catch (error) {
     res.status(400).json({
       message: "Error token could not be created",
+      error: error.message,
+    });
+  }
+});
+
+const sendParseDetokRequest = async (detokString) => {
+  try {
+    const url = `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    const data = JSON.parse(response);
+    return data;
+  } catch (error) {
+    throw new Error(`Detokenize api could not process request: ${error}`);
+  }
+};
+
+const getOrgMetaData = async (orgUid) => {
+  try {
+    const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    const data = JSON.parse(response);
+    return data;
+  } catch (error) {
+    throw new Error(`Could not get org meta data: ${error}`);
+  }
+};
+
+const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
+  try {
+    const url = `${CONFIG.REGISTRY_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    const data = JSON.parse(response);
+    return data[0];
+  } catch (error) {
+    throw new Error(`Could not get corresponding project data: ${error}`);
+  }
+};
+
+const getTokenizedUnitByAssetId = async (assetId) => {
+  try {
+    const url = `${CONFIG.REGISTRY_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const response = await request({
+      method: "get",
+      url,
+    });
+
+    return response;
+  } catch (err) {
+    throw new Error(`Could not get tokenized unit by asset id. ${err}`);
+  }
+};
+
+app.post("/parse-detok-file", async (req, res) => {
+  try {
+    const password = req.body.password;
+    const filePath = req.files.file.path;
+
+    let detokString = await unzipAndUnlockZipFile(filePath, password);
+    detokString = detokString.replace(/(\r\n|\n|\r)/gm, "");
+    const detokStringkIsValid =
+      typeof detokString === "string" && detokString.startsWith("detok");
+    if (!detokStringkIsValid) {
+      throw new Error("Uploaded file not valid.");
+    }
+
+    const parseDetokResponse = await sendParseDetokRequest(detokString);
+    const isDetokParsed = Boolean(parseDetokResponse?.token?.asset_id);
+    if (!isDetokParsed) {
+      throw new Error("Could not parse detok file properly.");
+    }
+
+    const assetId = parseDetokResponse?.token?.asset_id;
+    const unitToBeDetokenizedResponse = await getTokenizedUnitByAssetId(
+      assetId
+    );
+    let unitToBeDetokenized = JSON.parse(unitToBeDetokenizedResponse);
+    if (unitToBeDetokenized.length) {
+      unitToBeDetokenized = unitToBeDetokenized[0];
+    }
+
+    const project = await getProjectByWarehouseProjectId(
+      unitToBeDetokenized?.issuance?.warehouseProjectId
+    );
+
+    const orgUid = unitToBeDetokenized?.orgUid;
+    
+    const orgMetaData = await getOrgMetaData(orgUid);
+    const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
+    const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
+
+    const responseObject = {
+      token: {
+        org_uid: orgUid,
+        project_id: project.projectId,
+        vintage_year: unitToBeDetokenized?.vintageYear,
+        sequence_num: 0,
+        index: parsedAssetIdOrgMetaData?.index,
+        public_key: parsedAssetIdOrgMetaData?.public_key,
+        asset_id: assetId,
+      },
+      content: detokString,
+      unit: unitToBeDetokenized,
+    };
+
+    res.send(responseObject);
+  } catch (error) {
+    res.status(400).json({
+      message: "File could not be detokenized.",
       error: error.message,
     });
   }
