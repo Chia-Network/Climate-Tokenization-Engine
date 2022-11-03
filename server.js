@@ -497,6 +497,30 @@ app.post("/parse-detok-file", async (req, res) => {
   }
 });
 
+app.post("/confirm-detokanization", async (req, res) => {
+  try {
+    const confirmDetokanizationBody = { ...req.body };
+    const assetId = confirmDetokanizationBody?.token?.asset_id;
+    if (confirmDetokanizationBody.unit) {
+      delete confirmDetokanizationBody.unit;
+    }
+
+    const confirmDetokanizationResponse = await request({
+      method: "post",
+      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
+      body: JSON.stringify(confirmDetokanizationBody),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    res.send(confirmDetokanizationResponse);
+  } catch (error) {
+    res.status(400).json({
+      message: "Detokanization could not be confirmed",
+      error: error.message,
+    });
+  }
+});
+
 app.use((err, req, res, next) => {
   if (err) {
     if (_.get(err, "error.details")) {
