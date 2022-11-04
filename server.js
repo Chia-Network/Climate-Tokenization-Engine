@@ -181,8 +181,9 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   asset_id
 ) => {
   try {
-    let unitToBeUpdated =
-      warehouseApi.getUnitByWarehouseUnitId(warehouseUnitId);
+    let unitToBeUpdated = await warehouseApi.getUnitByWarehouseUnitId(
+      warehouseUnitId
+    );
     unitToBeUpdated = warehouseApi.cleanUnitBeforeUpdating(unitToBeUpdated);
 
     unitToBeUpdated.marketplaceIdentifier = asset_id;
@@ -204,13 +205,8 @@ const confirmTokenRegistrationOnWarehouse = async (
 ) => {
   if (retry <= 60) {
     try {
-      const response = await request({
-        method: "get",
-        url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
-      });
-
-      const data = JSON.parse(response);
-      const thereAreNoPendingTransactions = data?.confirmed;
+      const thereAreNoPendingTransactions =
+        await warehouseApi.getHasPendingTransactions();
 
       if (thereAreNoPendingTransactions) {
         return true;
@@ -234,15 +230,7 @@ const registerTokenCreationOnClimateWarehouse = async (
   warehouseUnitId
 ) => {
   try {
-    const response = await request({
-      url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
-      method: "post",
-      body: JSON.stringify({
-        [token.asset_id]: token,
-      }),
-    });
-
-    const data = JSON.parse(response);
+    const data = await warehouseApi.registerToken(token);
 
     if (
       data.message ===
@@ -394,7 +382,7 @@ app.post("/parse-detok-file", async (req, res) => {
     );
 
     const orgUid = unitToBeDetokenized?.orgUid;
-    
+
     const orgMetaData = await warehouseApi.getOrgMetaData(orgUid);
     const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);

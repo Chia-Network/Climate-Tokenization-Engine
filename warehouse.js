@@ -25,6 +25,22 @@ const deleteStagingData = async () => {
   }
 };
 
+const getHasPendingTransactions = async () => {
+  try {
+    const response = await request({
+      method: "get",
+      url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
+    });
+
+    const data = JSON.parse(response);
+    return Boolean(data?.confirmed);
+  } catch (error) {
+    throw new Error(
+      `Could not determine if there are pending transactions on warehouse: ${error}`
+    );
+  }
+};
+
 const cleanUnitBeforeUpdating = (unit) => {
   const unitToBeUpdated = { ...unit };
   delete unitToBeUpdated?.issuance?.orgUid;
@@ -135,6 +151,23 @@ const getUnitByWarehouseUnitId = async (warehouseUnitId) => {
   }
 };
 
+const registerToken = async (token) => {
+  try {
+    const response = await request({
+      url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
+      method: "post",
+      body: JSON.stringify({
+        [token.asset_id]: token,
+      }),
+    });
+
+    const data = JSON.parse(response);
+    return data;
+  } catch (error) {
+    throw new Error(`Could not register token on warehouse: ${error}`);
+  }
+};
+
 const getOrgMetaData = async (orgUid) => {
   try {
     const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
@@ -159,6 +192,8 @@ module.exports = {
   getUnitByWarehouseUnitId,
   getOrgMetaData,
   detokenizeUnit,
+  registerToken,
   splitDetokenizeUnit,
   cleanUnitBeforeUpdating,
+  getHasPendingTransactions,
 };
