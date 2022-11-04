@@ -25,6 +25,18 @@ const deleteStagingData = async () => {
   }
 };
 
+const cleanUnitBeforeUpdating = (unit) => {
+  const unitToBeUpdated = { ...unit };
+  delete unitToBeUpdated?.issuance?.orgUid;
+  delete unitToBeUpdated.issuanceId;
+  delete unitToBeUpdated.orgUid;
+  delete unitToBeUpdated.serialNumberBlock;
+
+  Object.keys(unitToBeUpdated).forEach(function (key, index) {
+    if (this[key] == null) delete this[key];
+  }, unitToBeUpdated);
+};
+
 const updateUnit = async (unitToBeUpdated) => {
   try {
     await request({
@@ -39,7 +51,10 @@ const updateUnit = async (unitToBeUpdated) => {
 };
 
 const detokenizeUnit = async (unit) => {
-  console.log("detokenize warehouse unit:", unit);
+  const unitToBeDetokenized = cleanUnitBeforeUpdating(unit);
+  unitToBeDetokenized.marketplace = "";
+  unitToBeDetokenized.marketplaceIdentifier = "";
+  await updateUnit(unitToBeDetokenized);
 };
 
 const splitDetokenizeUnit = async (unit, amount) => {
@@ -80,6 +95,22 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   }
 };
 
+const getUnitByWarehouseUnitId = async (warehouseUnitId) => {
+  try {
+    const response = await request({
+      method: "get",
+      url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
+    });
+
+    const data = JSON.parse(response);
+    return data;
+  } catch (error) {
+    throw new Error(
+      `Could not get warehouse unit by warehouseUnitId: ${error}`
+    );
+  }
+};
+
 const getOrgMetaData = async (orgUid) => {
   try {
     const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
@@ -101,7 +132,9 @@ module.exports = {
   updateUnit,
   getTokenizedUnitsByAssetId,
   getProjectByWarehouseProjectId,
+  getUnitByWarehouseUnitId,
   getOrgMetaData,
   detokenizeUnit,
   splitDetokenizeUnit,
+  cleanUnitBeforeUpdating,
 };

@@ -181,23 +181,11 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   asset_id
 ) => {
   try {
-    const unitToBeUpdatedResponse = await request({
-      method: "get",
-      url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
-    });
-
-    const unitToBeUpdated = JSON.parse(unitToBeUpdatedResponse);
+    let unitToBeUpdated =
+      warehouseApi.getUnitByWarehouseUnitId(warehouseUnitId);
+    unitToBeUpdated = warehouseApi.cleanUnitBeforeUpdating(unitToBeUpdated);
+    
     unitToBeUpdated.marketplaceIdentifier = asset_id;
-
-    delete unitToBeUpdated?.issuance?.orgUid;
-    delete unitToBeUpdated.issuanceId;
-    delete unitToBeUpdated.orgUid;
-    delete unitToBeUpdated.serialNumberBlock;
-
-    Object.keys(unitToBeUpdated).forEach(function (key, index) {
-      if (this[key] == null) delete this[key];
-    }, unitToBeUpdated);
-
     await warehouseApi.updateUnit(unitToBeUpdated);
 
     await warehouseApi.commitStagingData();
