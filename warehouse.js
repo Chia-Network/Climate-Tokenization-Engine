@@ -58,11 +58,29 @@ const detokenizeUnit = async (unit) => {
 };
 
 const splitDetokenizeUnit = async (unit, amount) => {
+  const dataToBeSubmitted = {
+    warehouseUnitId: unit.warehouseUnitId,
+    records: [
+      {
+        unitCount: unit.unitCount - amount,
+        unitBlockStart: unit.unitBlockStart,
+        unitBlockEnd: unit.unitBlockEnd,
+      },
+      {
+        unitCount: amount,
+        unitBlockStart: unit.unitBlockStart,
+        unitBlockEnd: unit.unitBlockEnd,
+        marketplace: null,
+        marketplaceIdentifier: null,
+      },
+    ],
+  };
+
   try {
     await request({
       method: "post",
       url: `${constants.API_HOST}/units/split`,
-      body: JSON.stringify(data),
+      body: JSON.stringify(dataToBeSubmitted),
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
