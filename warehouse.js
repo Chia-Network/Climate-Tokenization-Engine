@@ -58,12 +58,16 @@ const detokenizeUnit = async (unit) => {
 };
 
 const splitDetokenizeUnit = async (unit, amount) => {
-  console.log(
-    "split detokenize warehouse unit:",
-    unit,
-    " with amount: ",
-    amount
-  );
+  try {
+    await request({
+      method: "post",
+      url: `${constants.API_HOST}/units/split`,
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
+  }
 };
 
 const getTokenizedUnitsByAssetId = async (assetId) => {
