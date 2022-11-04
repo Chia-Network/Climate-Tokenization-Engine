@@ -65,6 +65,8 @@ const splitDetokenizeUnit = async (unit, amount) => {
         unitCount: unit.unitCount - amount,
         unitBlockStart: unit.unitBlockStart,
         unitBlockEnd: unit.unitBlockEnd,
+        marketplace: unit.marketplace,
+        marketplaceIdentifier: unit.marketplaceIdentifier,
       },
       {
         unitCount: amount,
