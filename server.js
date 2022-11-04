@@ -184,7 +184,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     let unitToBeUpdated =
       warehouseApi.getUnitByWarehouseUnitId(warehouseUnitId);
     unitToBeUpdated = warehouseApi.cleanUnitBeforeUpdating(unitToBeUpdated);
-    
+
     unitToBeUpdated.marketplaceIdentifier = asset_id;
     await warehouseApi.updateUnit(unitToBeUpdated);
 
@@ -394,10 +394,10 @@ app.post("/parse-detok-file", async (req, res) => {
     );
 
     const orgUid = unitToBeDetokenized?.orgUid;
-
+    
     const orgMetaData = await warehouseApi.getOrgMetaData(orgUid);
-    // const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
-    // const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
+    const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
+    const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
 
     const responseObject = {
       token: {
@@ -405,10 +405,10 @@ app.post("/parse-detok-file", async (req, res) => {
         project_id: project.projectId,
         vintage_year: unitToBeDetokenized?.vintageYear,
         sequence_num: 0,
-        index: orgMetaData,
-        //parsedAssetIdOrgMetaData?.index,
-        public_key: orgMetaData,
-        // parsedAssetIdOrgMetaData?.public_key,
+        //index: orgMetaData,
+        index: parsedAssetIdOrgMetaData?.index,
+        // public_key: orgMetaData,
+        public_key: parsedAssetIdOrgMetaData?.public_key,
         asset_id: assetId,
       },
       content: detokString,
@@ -455,30 +455,28 @@ app.post("/confirm-detokanization", async (req, res) => {
 
     if (amountLeftToBeDetokenized > 0) {
       await warehouseApi.deleteStagingData();
-      res.send(
+      throw new Error(
         "Could not detokenize warehouseunits. Total unitCount lower than needed detokanziation amount."
       );
     }
 
     await warehouseApi.commitStagingData();
 
-    res.send("done");
+    if (confirmDetokanizationBody.unit) {
+      delete confirmDetokanizationBody.unit;
+    }
+    if (confirmDetokanizationBody.amount) {
+      delete confirmDetokanizationBody.amount;
+    }
 
-    // if (confirmDetokanizationBody.unit) {
-    //   delete confirmDetokanizationBody.unit;
-    // }
-    // if (confirmDetokanizationBody.amount) {
-    //   delete confirmDetokanizationBody.amount;
-    // }
+    const confirmDetokanizationResponse = await request({
+      method: "post",
+      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
+      body: JSON.stringify(confirmDetokanizationBody),
+      headers: { "Content-Type": "application/json" },
+    });
 
-    // const confirmDetokanizationResponse = await request({
-    //   method: "post",
-    //   url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
-    //   body: JSON.stringify(confirmDetokanizationBody),
-    //   headers: { "Content-Type": "application/json" },
-    // });
-
-    // res.send(confirmDetokanizationResponse);
+    res.send(confirmDetokanizationResponse);
   } catch (error) {
     res.status(400).json({
       message: "Detokanization could not be confirmed",

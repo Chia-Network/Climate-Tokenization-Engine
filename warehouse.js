@@ -52,8 +52,8 @@ const updateUnit = async (unitToBeUpdated) => {
 
 const detokenizeUnit = async (unit) => {
   const unitToBeDetokenized = cleanUnitBeforeUpdating(unit);
-  unitToBeDetokenized.marketplace = "";
-  unitToBeDetokenized.marketplaceIdentifier = "";
+  unitToBeDetokenized.marketplace = null;
+  unitToBeDetokenized.marketplaceIdentifier = null;
   await updateUnit(unitToBeDetokenized);
 };
 
