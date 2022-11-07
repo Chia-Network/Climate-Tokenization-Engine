@@ -275,7 +275,7 @@ const registerTokenCreationOnClimateWarehouse = async (
     ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
-      if (isTokenRegistered) {
+      if (isTokenRegistered && CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
