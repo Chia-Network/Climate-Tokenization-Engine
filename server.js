@@ -205,6 +205,8 @@ const confirmTokenRegistrationOnWarehouse = async (
 ) => {
   if (retry <= 60) {
     try {
+      await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+      
       const thereAreNoPendingTransactions =
         await warehouseApi.getHasPendingTransactions();
 
@@ -262,6 +264,8 @@ const confirmTokenCreationWithTransactionId = async (
 ) => {
   if (retry <= 60) {
     try {
+      await new Promise((resolve) => setTimeout(() => resolve(), 30000));
+
       const response = await request({
         method: "get",
         url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/transactions/${transactionId}`,
@@ -300,7 +304,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
           sequence_num: req.body.sequence_num,
         },
         payment: {
-          amount: 100,
+          amount: (req.body.amount || 1) * 1000,
           fee: 100,
           to_address: req.body.to_address,
         },
