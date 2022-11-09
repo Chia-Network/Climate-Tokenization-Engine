@@ -21,7 +21,7 @@ const { unzipAndUnlockZipFile } = require("./utils/decompress");
 
 const app = express();
 const port = 31311;
-const CONFIG = getConfig();
+let CONFIG = getConfig();
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
@@ -49,6 +49,28 @@ const updateQueryWithParam = (query, ...params) => {
   const newParams = currentParams.toString();
   return `?${newParams}`;
 };
+
+app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
+  const orgUid = req.body.orgUid;
+  try {
+    const storeIds = await getStoreIds(orgUid);
+
+    if (storeIds.includes(orgUid)) {
+      updateConfig({ HOME_ORG: orgUid });
+      setTimeout(() => {
+        CONFIG = getConfig();
+      }, 0);
+      res.json({ message: "successfully connected" });
+    } else {
+      throw new Error("orgUid not found");
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: "Error connecting orgUid",
+      error: error.message,
+    });
+  }
+});
 
 app.use(async function (req, res, next) {
   try {
@@ -155,25 +177,6 @@ app.use(
     },
   })
 );
-
-app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
-  const orgUid = req.body.orgUid;
-  try {
-    const storeIds = await getStoreIds(orgUid);
-
-    if (storeIds.includes(orgUid)) {
-      updateConfig({ HOME_ORG: orgUid });
-      res.json({ message: "successfully connected" });
-    } else {
-      throw new Error("orgUid not found");
-    }
-  } catch (error) {
-    res.status(400).json({
-      message: "Error connecting orgUid",
-      error: error.message,
-    });
-  }
-});
 
 const updateUnitMarketplaceIdentifierWithAssetId = async (
   warehouseUnitId,
@@ -469,7 +472,7 @@ app.post("/parse-detok-file", async (req, res) => {
     );
 
     const orgUid = unitToBeDetokenized?.orgUid;
-    
+
     const orgMetaData = await getOrgMetaData(orgUid);
     const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
