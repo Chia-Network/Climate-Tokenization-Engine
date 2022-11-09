@@ -278,7 +278,7 @@ const registerTokenCreationOnClimateWarehouse = async (
     ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
-      if (isTokenRegistered) {
+      if (isTokenRegistered && CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
@@ -343,7 +343,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         },
         payment: {
           amount: (req.body.amount || 1) * 1000,
-          fee: 100,
+          fee: CONFIG.DEFAULT_FEE || 100,
           to_address: req.body.to_address,
         },
       }),
@@ -467,6 +467,10 @@ app.post("/parse-detok-file", async (req, res) => {
       unitToBeDetokenized = unitToBeDetokenized[0];
     }
 
+    if (parseDetokResponse?.payment?.amount) {
+      unitToBeDetokenized.unitCount = parseDetokResponse?.payment?.amount;
+    }
+      
     const project = await getProjectByWarehouseProjectId(
       unitToBeDetokenized?.issuance?.warehouseProjectId
     );
@@ -486,6 +490,7 @@ app.post("/parse-detok-file", async (req, res) => {
         index: parsedAssetIdOrgMetaData?.index,
         public_key: parsedAssetIdOrgMetaData?.public_key,
         asset_id: assetId,
+        warehouse_project_id: project.warehouseProjectId
       },
       content: detokString,
       unit: unitToBeDetokenized,
@@ -502,14 +507,17 @@ app.post("/parse-detok-file", async (req, res) => {
 
 app.post("/confirm-detokanization", async (req, res) => {
   try {
-    const confirmDetokanizationBody = { ...req.body };
+    const confirmDetokanizationBody = _.cloneDeep(req.body);
+
+    console.log(confirmDetokanizationBody);
+
     const assetId = confirmDetokanizationBody?.token?.asset_id;
     if (confirmDetokanizationBody.unit) {
       delete confirmDetokanizationBody.unit;
     }
 
     const confirmDetokanizationResponse = await request({
-      method: "post",
+      method: "put",
       url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
       body: JSON.stringify(confirmDetokanizationBody),
       headers: { "Content-Type": "application/json" },
