@@ -340,7 +340,6 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         },
         payment: {
           amount: (req.body.amount || 1) * 1000,
-          fee: CONFIG.DEFAULT_FEE || 100,
           to_address: req.body.to_address,
         },
       }),
