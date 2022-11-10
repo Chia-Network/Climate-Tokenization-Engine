@@ -9,7 +9,7 @@ const homeDir = os.homedir();
 const persistanceFolderPath = `${homeDir}/.chia/climate-portal`;
 const configFilePath = path.resolve(`${persistanceFolderPath}/config.yaml`);
 
-const getConfig = _.memoize(() => {
+const getConfig = () => {
   try {
     if (!fs.existsSync(configFilePath)) {
       try {
@@ -32,7 +32,7 @@ const getConfig = _.memoize(() => {
   } catch (e) {
     console.log(`Config file not found at ${configFilePath}`, e);
   }
-});
+};
 
 const updateConfig = (updates) => {
   try {
