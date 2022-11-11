@@ -17,7 +17,6 @@ const validator = joiExpress.createValidator({ passError: true });
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
-const { unzipAndUnlockZipFile } = require("./utils/decompress");
 
 const app = express();
 const port = 31311;
@@ -440,10 +439,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
 
 app.post("/parse-detok-file", async (req, res) => {
   try {
-    const password = req.body.password;
-    const filePath = req.files.file.path;
-
-    let detokString = await unzipAndUnlockZipFile(filePath, password);
+    let detokString = req.body.detokString;
     detokString = detokString.replace(/(\r\n|\n|\r)/gm, "");
     const detokStringkIsValid =
       typeof detokString === "string" && detokString.startsWith("detok");
@@ -469,7 +465,7 @@ app.post("/parse-detok-file", async (req, res) => {
     if (parseDetokResponse?.payment?.amount) {
       unitToBeDetokenized.unitCount = parseDetokResponse?.payment?.amount;
     }
-      
+
     const project = await getProjectByWarehouseProjectId(
       unitToBeDetokenized?.issuance?.warehouseProjectId
     );
@@ -489,7 +485,7 @@ app.post("/parse-detok-file", async (req, res) => {
         index: parsedAssetIdOrgMetaData?.index,
         public_key: parsedAssetIdOrgMetaData?.public_key,
         asset_id: assetId,
-        warehouse_project_id: project.warehouseProjectId
+        warehouse_project_id: project.warehouseProjectId,
       },
       content: detokString,
       unit: unitToBeDetokenized,
