@@ -18,11 +18,10 @@ const warehouseApi = require("./warehouse");
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
-const { unzipAndUnlockZipFile } = require("./utils/decompress");
 
 const app = express();
 const port = 31311;
-const CONFIG = getConfig();
+let CONFIG = getConfig();
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
@@ -50,6 +49,28 @@ const updateQueryWithParam = (query, ...params) => {
   const newParams = currentParams.toString();
   return `?${newParams}`;
 };
+
+app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
+  const orgUid = req.body.orgUid;
+  try {
+    const storeIds = await getStoreIds(orgUid);
+
+    if (storeIds.includes(orgUid)) {
+      updateConfig({ HOME_ORG: orgUid });
+      setTimeout(() => {
+        CONFIG = getConfig();
+      }, 0);
+      res.json({ message: "successfully connected" });
+    } else {
+      throw new Error("orgUid not found");
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: "Error connecting orgUid",
+      error: error.message,
+    });
+  }
+});
 
 app.use(async function (req, res, next) {
   try {
@@ -157,25 +178,6 @@ app.use(
   })
 );
 
-app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
-  const orgUid = req.body.orgUid;
-  try {
-    const storeIds = await getStoreIds(orgUid);
-
-    if (storeIds.includes(orgUid)) {
-      updateConfig({ HOME_ORG: orgUid });
-      res.json({ message: "successfully connected" });
-    } else {
-      throw new Error("orgUid not found");
-    }
-  } catch (error) {
-    res.status(400).json({
-      message: "Error connecting orgUid",
-      error: error.message,
-    });
-  }
-});
-
 const updateUnitMarketplaceIdentifierWithAssetId = async (
   warehouseUnitId,
   asset_id
@@ -206,7 +208,7 @@ const confirmTokenRegistrationOnWarehouse = async (
   if (retry <= 60) {
     try {
       await new Promise((resolve) => setTimeout(() => resolve(), 30000));
-      
+
       const thereAreNoPendingTransactions =
         await warehouseApi.getHasPendingTransactions();
 
@@ -240,7 +242,7 @@ const registerTokenCreationOnClimateWarehouse = async (
     ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
-      if (isTokenRegistered) {
+      if (isTokenRegistered && CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
@@ -305,7 +307,6 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         },
         payment: {
           amount: (req.body.amount || 1) * 1000,
-          fee: 100,
           to_address: req.body.to_address,
         },
       }),
@@ -359,10 +360,7 @@ const sendParseDetokRequest = async (detokString) => {
 
 app.post("/parse-detok-file", async (req, res) => {
   try {
-    const password = req.body.password;
-    const filePath = req.files.file.path;
-
-    let detokString = await unzipAndUnlockZipFile(filePath, password);
+    let detokString = req.body.detokString;
     detokString = detokString.replace(/(\r\n|\n|\r)/gm, "");
     const detokStringkIsValid =
       typeof detokString === "string" && detokString.startsWith("detok");
@@ -402,6 +400,7 @@ app.post("/parse-detok-file", async (req, res) => {
         // public_key: orgMetaData,
         public_key: parsedAssetIdOrgMetaData?.public_key,
         asset_id: assetId,
+        warehouse_project_id: project.warehouseProjectId,
       },
       content: detokString,
       unit: unitToBeDetokenized,
@@ -419,7 +418,10 @@ app.post("/parse-detok-file", async (req, res) => {
 
 app.post("/confirm-detokanization", async (req, res) => {
   try {
-    const confirmDetokanizationBody = { ...req.body };
+    const confirmDetokanizationBody = _.cloneDeep(req.body);
+
+    console.log(confirmDetokanizationBody);
+
     const assetId = confirmDetokanizationBody?.token?.asset_id;
 
     const warehouseUnitsToDetokenizeFrom =
@@ -462,7 +464,7 @@ app.post("/confirm-detokanization", async (req, res) => {
     }
 
     const confirmDetokanizationResponse = await request({
-      method: "post",
+      method: "put",
       url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
       body: JSON.stringify(confirmDetokanizationBody),
       headers: { "Content-Type": "application/json" },
