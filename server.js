@@ -104,6 +104,10 @@ app.use(
         {
           param: "orgUid",
           value: CONFIG.HOME_ORG,
+        },
+        {
+          param: "includeProjectInfoInSearch",
+          value: true,
         }
       );
 
@@ -163,6 +167,10 @@ app.use(
         {
           param: "orgUid",
           value: CONFIG.HOME_ORG,
+        },
+        {
+          param: "includeProjectInfoInSearch",
+          value: true,
         }
       );
 
