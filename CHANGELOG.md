@@ -1,4 +1,13 @@
-## 1.0.1 (2022-11-11)
+## [1.0.2](https://github.com/Chia-Network/Climate-Portal/compare/1.0.1...1.0.2) (2022-12-02)
+
+
+### Features
+
+* add default search param ([d5108f9](https://github.com/Chia-Network/Climate-Portal/commit/d5108f99b9d0ea1de30f1a2fa79659ce7fa28238))
+
+
+
+## [1.0.1](https://github.com/Chia-Network/Climate-Portal/compare/5309cfad54c33ed3ca2a714d61fbdd3e3155b476...1.0.1) (2022-11-11)
 
 
 ### Bug Fixes
