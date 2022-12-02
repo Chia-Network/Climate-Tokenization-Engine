@@ -35,12 +35,12 @@ jobs:
       - uses: Chia-Network/actions/clean-workspace@main
 
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Node 16.x
-        uses: actions/setup-node@v2.4.1
+        uses: actions/setup-node@v3
         with:
-          node-version: '16.0.0'
+          node-version: '16.13'
 
       - name: Ignore Husky
         run: npm set-script prepare ""
@@ -68,18 +68,6 @@ jobs:
 
       - name: Make executable
         run: chmod +x dist/climate-portal
-
-### If using sqlite, uncomment the following 2 sections ###
-### and add a line to sign the sqlite binaries in the   ###
-### Mac section.                                        ###
-
-#      - name: Copy sqlite3 (non windows)
-#        run: cp ./node_modules/sqlite3/build/Release/node_sqlite3.node ./dist/
-#        if: matrix.runs-on != 'windows-2019'
-
-#      - name: Copy sqlite3 (windows)
-#        run: cp .\node_modules\sqlite3\build\Release\node_sqlite3.node .\dist\
-#        if: matrix.runs-on == 'windows-2019'
 
       # Windows Code Signing
       - name: Decode code signing cert into an encrypted file
@@ -145,13 +133,13 @@ jobs:
 
       - name: Upload Mac Installer
         if: matrix.runs-on == 'macos-latest'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: mac-installer
           path: ${{ github.workspace }}/build-scripts/macos/target/pkg-signed
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ github.workspace }}/dist
@@ -163,19 +151,19 @@ jobs:
       - build
     steps:
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: windows-x64
           path: windows-x64
 
       - name: Download MacOS artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: mac-installer
           path: mac-installer
 
       - name: Download Linux artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: linux-x64
           path: linux-x64
