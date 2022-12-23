@@ -30,6 +30,15 @@ app.use(
     exposedHeaders: Object.values(headerKeys).join(","),
   })
 );
+
+app.use("/*", function (req, res, next) {
+  if (CONFIG.HOME_ORG) {
+    res.header("Access-Control-Expose-Headers", "x-org-uid");
+    res.header("x-org-uid", CONFIG.HOME_ORG);
+  }
+  next();
+});
+
 const options = {
   uploadDir: os.tmpdir(),
   autoClean: true,
@@ -511,8 +520,6 @@ app.post("/parse-detok-file", async (req, res) => {
 app.post("/confirm-detokanization", async (req, res) => {
   try {
     const confirmDetokanizationBody = _.cloneDeep(req.body);
-
-    console.log(confirmDetokanizationBody);
 
     const assetId = confirmDetokanizationBody?.token?.asset_id;
     if (confirmDetokanizationBody.unit) {
