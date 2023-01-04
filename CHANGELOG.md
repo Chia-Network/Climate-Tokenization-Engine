@@ -1,3 +1,12 @@
+## [1.0.4](https://github.com/Chia-Network/Climate-Portal/compare/1.0.2...1.0.4) (2023-01-04)
+
+
+### Features
+
+* add org-uid headers to all responses ([77b7ce7](https://github.com/Chia-Network/Climate-Portal/commit/77b7ce7999e7b6af08088fdeb5746b77d8813f0f))
+
+
+
 ## [1.0.2](https://github.com/Chia-Network/Climate-Portal/compare/1.0.1...1.0.2) (2022-12-02)
 
 
