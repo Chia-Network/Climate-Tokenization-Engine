@@ -1,6 +1,6 @@
 {
   "name": "climate-portal",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "bin": "./server.js",
   "description": "",
   "main": "proxy.js",
