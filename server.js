@@ -179,6 +179,10 @@ app.use(
         {
           param: "includeProjectInfoInSearch",
           value: true,
+        },
+        {
+          param: "filter",
+          value: CONFIG.UNITS_FILTER,
         }
       );
 
