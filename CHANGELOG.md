@@ -1,3 +1,12 @@
+## [1.0.5](https://github.com/Chia-Network/Climate-Portal/compare/1.0.4...1.0.5) (2023-01-13)
+
+
+### Features
+
+* filter untokenized units by portal api config param ([0946480](https://github.com/Chia-Network/Climate-Portal/commit/09464809d023ea1f8562dbdd9468031ab616bfec))
+
+
+
 ## [1.0.4](https://github.com/Chia-Network/Climate-Portal/compare/1.0.2...1.0.4) (2023-01-04)
 
 
