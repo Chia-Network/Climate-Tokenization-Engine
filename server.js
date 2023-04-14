@@ -572,6 +572,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add optional API key if set in .env file
+app.use(function (req, res, next) {
+  if (CONFIG.API_KEY && CONFIG.API_KEY !== "") {
+    const apikey = req.header("x-api-key");
+    if (CONFIG.API_KEY === apikey) {
+      next();
+    } else {
+      res.status(403).json({ message: "API key not found" });
+    }
+  } else {
+    next();
+  }
+});
+
 app.listen(port, () => {
   console.log(`Application is running on port ${port}.`);
 });
