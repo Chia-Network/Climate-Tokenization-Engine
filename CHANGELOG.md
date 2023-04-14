@@ -1,3 +1,12 @@
+## [1.0.6](https://github.com/Chia-Network/Climate-Portal/compare/1.0.5...1.0.6) (2023-04-14)
+
+
+### Features
+
+* support api key ([451efca](https://github.com/Chia-Network/Climate-Portal/commit/451efca62430366c118d0a8f89c0ca3c297592b5))
+
+
+
 ## [1.0.5](https://github.com/Chia-Network/Climate-Portal/compare/1.0.4...1.0.5) (2023-01-13)
 
 
