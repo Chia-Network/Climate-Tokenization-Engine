@@ -1,4 +1,4 @@
-## [1.0.6](https://github.com/Chia-Network/Climate-Portal/compare/1.0.5...1.0.6) (2023-04-14)
+## [1.0.6](https://github.com/Chia-Network/Climate-Portal/compare/1.0.5...1.0.6) (2023-04-18)
 
 
 ### Features
