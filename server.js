@@ -127,6 +127,8 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
+
+      addCadtApiKeyHeader(proxyRes.headers);
     },
   })
 );
@@ -153,6 +155,8 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
+
+      addCadtApiKeyHeader(proxyRes.headers);
     },
   })
 );
@@ -194,6 +198,8 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
+
+      addCadtApiKeyHeader(proxyRes.headers);
     },
   })
 );
@@ -206,6 +212,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     const unitToBeUpdatedResponse = await request({
       method: "get",
       url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
+      headers: addCadtApiKeyHeader()
     });
 
     const unitToBeUpdated = JSON.parse(unitToBeUpdatedResponse);
@@ -220,11 +227,13 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       if (this[key] == null) delete this[key];
     }, unitToBeUpdated);
 
+    let headers = addCadtApiKeyHeader({ "Content-Type": "application/json" });
+
     const updateUnitResponse = await request({
       method: "put",
       url: `${CONFIG.REGISTRY_HOST}/v1/units`,
       body: JSON.stringify(unitToBeUpdated),
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
     });
 
     const data = JSON.parse(updateUnitResponse);
@@ -232,7 +241,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     await request({
       method: "post",
       url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
     });
   } catch (error) {
     console.log(
@@ -254,6 +263,7 @@ const confirmTokenRegistrationOnWarehouse = async (
       const response = await request({
         method: "get",
         url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
+        headers: addCadtApiKeyHeader()
       });
 
       const data = JSON.parse(response);
@@ -287,7 +297,7 @@ const registerTokenCreationOnClimateWarehouse = async (
       body: JSON.stringify({
         [token.asset_id]: JSON.stringify(token),
       }),
-      headers: { "Content-Type": "application/json" },
+      headers: addCadtApiKeyHeader({ "Content-Type": "application/json" }),
     });
 
     const data = JSON.parse(response);
@@ -419,6 +429,7 @@ const getOrgMetaData = async (orgUid) => {
     const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
     const response = await request({
       method: "get",
+      headers: addCadtApiKeyHeader(),
       url,
     });
 
@@ -434,6 +445,7 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
     const url = `${CONFIG.REGISTRY_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
     const response = await request({
       method: "get",
+      headers: addCadtApiKeyHeader(),
       url,
     });
 
@@ -449,6 +461,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
     const url = `${CONFIG.REGISTRY_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
     const response = await request({
       method: "get",
+      headers: addCadtApiKeyHeader(),
       url,
     });
 
@@ -457,6 +470,21 @@ const getTokenizedUnitByAssetId = async (assetId) => {
     throw new Error(`Could not get tokenized unit by asset id. ${err}`);
   }
 };
+
+/**
+ * If an API key for the Climate Action Data Trust (CADT) is set in the server configuration, add the API key value to
+ * the headers that are sent with a request to the CADT. This function mutates the header object passed in and returns
+ * the object for convenience. If no headers are passed to this function, a new dictionary containing just the CADT API
+ * key (or an empty dictionary, if the API key is not set) is created and returned. If CADT_API_KEY is not set in the
+ * configuration, the header object will not be modified.
+ */
+const addCadtApiKeyHeader = (headers = {}) => {
+  if (CONFIG.CADT_API_KEY) {
+    headers["x-api-key"] = CONFIG.CADT_API_KEY;
+  }
+
+  return headers;
+}
 
 app.post("/parse-detok-file", async (req, res) => {
   try {
