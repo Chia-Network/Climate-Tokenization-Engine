@@ -127,9 +127,12 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
-
-      addCadtApiKeyHeader(proxyRes.headers);
     },
+    onProxyReq(proxyReq) {
+      if (CONFIG.CADT_API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
+      }
+    }
   })
 );
 
@@ -155,9 +158,12 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
-
-      addCadtApiKeyHeader(proxyRes.headers);
     },
+    onProxyReq(proxyReq) {
+      if (CONFIG.CADT_API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
+      }
+    }
   })
 );
 
@@ -198,9 +204,12 @@ app.use(
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
         proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
       }
-
-      addCadtApiKeyHeader(proxyRes.headers);
     },
+    onProxyReq(proxyReq) {
+      if (CONFIG.CADT_API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
+      }
+    }
   })
 );
 
