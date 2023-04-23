@@ -1,3 +1,12 @@
+## [1.0.7](https://github.com/Chia-Network/Climate-Portal/compare/1.0.6...1.0.7) (2023-04-19)
+
+
+### Bug Fixes
+
+* add UNITS_FILTER to default config ([ba0f4ce](https://github.com/Chia-Network/Climate-Portal/commit/ba0f4ce571b90c321664f182f79ca578da32582f))
+
+
+
 ## [1.0.6](https://github.com/Chia-Network/Climate-Portal/compare/1.0.5...1.0.6) (2023-04-18)
 
 
