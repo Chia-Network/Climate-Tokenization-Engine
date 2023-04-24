@@ -26,9 +26,9 @@ POST Options:
 |:-------|:-------|:---------|:-----------------------------------------|
 | orgUid | String | True     | orgUid of the organization to connect to |
 
-### POST Examples
+### Example
 
-#### Connect to a specific organization
+### Connect to a specific organization
 
 Request:
 ```json
@@ -56,17 +56,17 @@ GET Options:
 | orgUid                     | String  | False     | Only show results matching the specified `orgUid`                                            |
 | includeProjectInfoInSearch | Boolean | False     | If `true`, then include project info in the results [Default: true]                          |
 
-### GET Examples
+### Example
 
-#### List all tokenized blocks of units
+### List all tokenized blocks of units
 
+Request:
 ```json
-// Request
 curl --location --request GET '34.209.61.105:31311/units/tokenized' --header 'Content-Type: application/json'
 ```
 
+Response:
 ```json
-// Response
 [
   {
     "warehouseUnitId":"e4ebc9aa-27ab-4d50-8ef9-f1009cc8e18b",
@@ -168,17 +168,17 @@ GET Options:
 | includeProjectInfoInSearch | Boolean | False     | If `true`, then include project info in the results [Default: true]                          |
 | filter                     | String  | False     | Only display results that contain the specified query (case insensitive)                     |
 
-### GET Examples
+### Example
 
-#### List all tokenized blocks of units
+### List all tokenized blocks of units
 
+Request:
 ```json
-// Request
 curl --location -g --request GET '34.209.61.105:31311/units/untokenized' --header 'Content-Type: application/json'
 ```
 
+Response:
 ```json
-// Response
 [
   {
     "warehouseUnitId":"eebfb657-0fcd-4155-8c8a-01a7304a7b40",
@@ -236,17 +236,17 @@ GET Options:
 |:---------------------------|:--------|:----------|:---------------------------------------------------------------------------------------------|
 | orgUid                     | String  | False     | Only show results matching the specified `orgUid`                                            |
 
-### GET Examples
+### Example
 
-#### List all projects
+### List all projects
 
+Request:
 ```json
-// Request
 curl --location --request GET '34.209.61.105:31311/projects' --header 'Content-Type: application/json'
 ```
 
+Response:
 ```json
-// Response
 [
   {
     "warehouseProjectId":"f577afa2-63a6-4d55-9197-63ca391dbe91",
@@ -723,7 +723,7 @@ Functionality: Validate a detokanization request file and return its contents
 POST Options: 
 
 
-### POST Examples
+### Example
 
 Request:
 
@@ -745,7 +745,7 @@ Functionality: Confirm that detokanization has occurred
 
 POST Options: None
 
-### POST Examples
+### Example
 
 Request:
 
