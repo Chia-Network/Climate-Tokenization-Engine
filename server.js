@@ -345,7 +345,7 @@ const confirmTokenCreationWithTransactionId = async (
 
       const response = await request({
         method: "get",
-        url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/transactions/${transactionId}`,
+        url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/transactions/${transactionId}`,
       });
 
       const data = JSON.parse(response);
@@ -371,7 +371,7 @@ const confirmTokenCreationWithTransactionId = async (
 app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     const tokenizeRequestOptions = {
-      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens`,
+      url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`,
       method: "post",
       body: JSON.stringify({
         token: {
@@ -420,7 +420,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
 
 const sendParseDetokRequest = async (detokString) => {
   try {
-    const url = `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
     const response = await request({
       method: "get",
       url,
@@ -569,7 +569,7 @@ app.post("/confirm-detokanization", async (req, res) => {
 
     const confirmDetokanizationResponse = await request({
       method: "put",
-      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
+      url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/${assetId}/detokenize`,
       body: JSON.stringify(confirmDetokanizationBody),
       headers: { "Content-Type": "application/json" },
     });
