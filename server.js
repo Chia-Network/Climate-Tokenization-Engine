@@ -58,6 +58,20 @@ const updateQueryWithParam = (query, ...params) => {
   return `?${newParams}`;
 };
 
+// Add optional API key if set in .env file
+app.use(function (req, res, next) {
+  if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== "") {
+    const apikey = req.header("x-api-key");
+    if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
+      next();
+    } else {
+      res.status(403).json({ message: "API key not found" });
+    }
+  } else {
+    next();
+  }
+});
+
 app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   const orgUid = req.body.orgUid;
   try {
@@ -609,19 +623,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add optional API key if set in .env file
-app.use(function (req, res, next) {
-  if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== "") {
-    const apikey = req.header("x-api-key");
-    if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
-      next();
-    } else {
-      res.status(403).json({ message: "API key not found" });
-    }
-  } else {
-    next();
-  }
-});
+
 
 app.listen(port, () => {
   console.log(`Application is running on port ${port}.`);
