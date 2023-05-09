@@ -58,7 +58,7 @@ const updateQueryWithParam = (query, ...params) => {
   return `?${newParams}`;
 };
 
-// Add optional API key if set in .env file
+// Add optional API key if set in config file
 app.use(function (req, res, next) {
   if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== "") {
     const apikey = req.header("x-api-key");
