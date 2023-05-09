@@ -22,13 +22,13 @@ jobs:
       matrix:
         include:
           - runs-on: ubuntu-latest
-            artifact-name: linux-x64
+            artifact-name: climate-tokenization-engine-linux-x64
             build-command: npm run create-linux-x64-dist
           - runs-on: macos-latest
-            artifact-name: macos-x64
+            artifact-name: climate-tokenization-engine-macos-x64
             build-command: npm run create-mac-x64-dist
           - runs-on: windows-2019
-            artifact-name: windows-x64
+            artifact-name: climate-tokenization-engine-windows-x64
             build-command: npm run create-win-x64-dist
 
     steps:
@@ -67,7 +67,7 @@ jobs:
         run: ${{ matrix.build-command }}
 
       - name: Make executable
-        run: chmod +x dist/climate-portal
+        run: chmod +x dist/climate-tokenization*
 
       # Windows Code Signing
       - name: Decode code signing cert into an encrypted file
@@ -83,7 +83,7 @@ jobs:
         with:
           certificate_path: .\win_code_sign_cert.pfx
           certificate_password: ${{ secrets.WIN_CODE_SIGN_PASSWORD }}
-          file: ${{ github.workspace }}/dist/climate-portal.exe
+          file: ${{ github.workspace }}/dist/climate-tokenization-engine.exe
 
       # Mac .pkg build + sign
       - name: Import Apple installer signing certificate
@@ -112,22 +112,22 @@ jobs:
           cp -r ${{ github.workspace }}/dist ${{ github.workspace }}/build-scripts/macos/application
 
           echo "Signing the binaries"
-          codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp --options=runtime --entitlements ${{ github.workspace }}/build-scripts/macos/entitlements.mac.plist ${{ github.workspace }}/build-scripts/macos/application/climate-portal
+          codesign -f -s "Developer ID Application: Chia Network Inc." --timestamp --options=runtime --entitlements ${{ github.workspace }}/build-scripts/macos/entitlements.mac.plist ${{ github.workspace }}/build-scripts/macos/application/climate-tokenization-engine
 
           # Makes the .pkg in ./build-scripts/macos/target/pkg
           echo "Building the .pkg"
-          bash ${{ github.workspace }}/build-scripts/macos/build-macos.sh ClimatePortal
+          bash ${{ github.workspace }}/build-scripts/macos/build-macos.sh ClimateTokenizationEngine
 
           mkdir -p ${{ github.workspace }}/build-scripts/macos/target/pkg-signed
 
           echo "Signing the .pkg"
-          productsign --sign "Developer ID Installer: Chia Network Inc." ${{ github.workspace }}/build-scripts/macos/target/pkg/ClimatePortal-macos-installer-x64.pkg ${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimatePortal-macos-installer-x64.pkg
+          productsign --sign "Developer ID Installer: Chia Network Inc." ${{ github.workspace }}/build-scripts/macos/target/pkg/ClimateTokenizationEngine-macos-installer-x64.pkg ${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimateTokenizationEngine-macos-installer-x64.pkg
 
           echo "Notarizing the .pkg"
           npm install -g notarize-cli
           notarize-cli \
-            --file=${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimatePortal-macos-installer-x64.pkg \
-            --bundle-id net.chia.climate-portal \
+            --file=${{ github.workspace }}/build-scripts/macos/target/pkg-signed/ClimateTokenizationEngine-macos-installer-x64.pkg \
+            --bundle-id net.chia.climate-tokenization-engine \
             --username "${{ secrets.APPLE_NOTARIZE_USERNAME }}" \
             --password "${{ secrets.APPLE_NOTARIZE_PASSWORD }}"
 
@@ -135,7 +135,7 @@ jobs:
         if: matrix.runs-on == 'macos-latest'
         uses: actions/upload-artifact@v3
         with:
-          name: mac-installer
+          name: climate-tokenization-engine-mac-installer
           path: ${{ github.workspace }}/build-scripts/macos/target/pkg-signed
 
       - name: Upload artifacts
@@ -153,20 +153,20 @@ jobs:
       - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
-          name: windows-x64
-          path: windows-x64
+          name: climate-tokenization-engine-windows-x64
+          path: climate-tokenization-engine-windows-x64
 
       - name: Download MacOS artifacts
         uses: actions/download-artifact@v3
         with:
-          name: mac-installer
-          path: mac-installer
+          name: climate-tokenization-engine-mac-installer
+          path: climate-tokenization-engine-mac-installer
 
       - name: Download Linux artifacts
         uses: actions/download-artifact@v3
         with:
-          name: linux-x64
-          path: linux-x64
+          name: climate-tokenization-engine-linux-x64
+          path: climate-tokenization-engine-linux-x64
 
       - name: Get tag name
         id: tag-name
@@ -175,14 +175,14 @@ jobs:
 
       - name: Create zips
         run: |
-          zip -r windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip windows-x64
-          zip -r macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip mac-installer
-          zip -r linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip linux-x64
+          zip -r climate-tokenization-engine-windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-windows-x64
+          zip -r climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-mac-installer
+          zip -r climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-linux-x64
 
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
-            windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
-            macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
-            linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            climate-tokenization-engine-windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
