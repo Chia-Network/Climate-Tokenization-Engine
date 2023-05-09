@@ -1,3 +1,12 @@
+## [1.0.8](https://github.com/Chia-Network/Climate-Portal/compare/1.0.7...1.0.8) (2023-04-24)
+
+
+### Bug Fixes
+
+* include api key in requests to cadt ([f755b5a](https://github.com/Chia-Network/Climate-Portal/commit/f755b5a65bc12c14ccc3ba9039c06dca42dc199e))
+
+
+
 ## [1.0.7](https://github.com/Chia-Network/Climate-Portal/compare/1.0.6...1.0.7) (2023-04-19)
 
 
