@@ -1,21 +1,20 @@
 const request = require("request-promise");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const https = require("https");
 
-const { getConfig } = require("./utils/config-loader");
+const { getConfig, getChiaRoot } = require("./utils/config-loader");
 const CONFIG = getConfig();
 
 const getBaseOptions = () => {
-  const homeDir = os.homedir();
+  const chiaRoot = getChiaRoot();
 
   const certFile = path.resolve(
-    `${homeDir}/.chia/mainnet/config/ssl/data_layer/private_data_layer.crt`
+    `${chiaRoot}/config/ssl/data_layer/private_data_layer.crt`
   );
 
   const keyFile = path.resolve(
-    `${homeDir}/.chia/mainnet/config/ssl/data_layer/private_data_layer.key`
+    `${chiaRoot}/config/ssl/data_layer/private_data_layer.key`
   );
 
   const httpsAgent = new https.Agent({
