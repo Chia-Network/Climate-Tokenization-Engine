@@ -58,6 +58,20 @@ const updateQueryWithParam = (query, ...params) => {
   return `?${newParams}`;
 };
 
+// Add optional API key if set in config file
+app.use(function (req, res, next) {
+  if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== "") {
+    const apikey = req.header("x-api-key");
+    if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
+      next();
+    } else {
+      res.status(403).json({ message: "API key not found" });
+    }
+  } else {
+    next();
+  }
+});
+
 app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
   const orgUid = req.body.orgUid;
   try {
@@ -97,11 +111,11 @@ app.use(async function (req, res, next) {
 app.use(
   `/units/tokenized`,
   createProxyMiddleware({
-    target: CONFIG.REGISTRY_HOST,
+    target: CONFIG.CADT_API_SERVER_HOST,
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
-      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(
         currentUrl.search,
@@ -139,11 +153,11 @@ app.use(
 app.use(
   `/projects`,
   createProxyMiddleware({
-    target: CONFIG.REGISTRY_HOST,
+    target: CONFIG.CADT_API_SERVER_HOST,
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
-      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(currentUrl.search, {
         param: "orgUid",
@@ -170,11 +184,11 @@ app.use(
 app.use(
   `/units/untokenized`,
   createProxyMiddleware({
-    target: CONFIG.REGISTRY_HOST,
+    target: CONFIG.CADT_API_SERVER_HOST,
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
-      const currentUrl = new URL(`${CONFIG.REGISTRY_HOST}${path}`);
+      const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(
         currentUrl.search,
@@ -220,7 +234,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   try {
     const unitToBeUpdatedResponse = await request({
       method: "get",
-      url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
+      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
       headers: addCadtApiKeyHeader()
     });
 
@@ -240,7 +254,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 
     const updateUnitResponse = await request({
       method: "put",
-      url: `${CONFIG.REGISTRY_HOST}/v1/units`,
+      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
       body: JSON.stringify(unitToBeUpdated),
       headers: headers,
     });
@@ -249,7 +263,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 
     await request({
       method: "post",
-      url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
+      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/commit`,
       headers: headers,
     });
   } catch (error) {
@@ -271,7 +285,7 @@ const confirmTokenRegistrationOnWarehouse = async (
 
       const response = await request({
         method: "get",
-        url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
+        url: `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/hasPendingTransactions`,
         headers: addCadtApiKeyHeader()
       });
 
@@ -301,7 +315,7 @@ const registerTokenCreationOnClimateWarehouse = async (
 ) => {
   try {
     const response = await request({
-      url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
+      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`,
       method: "post",
       body: JSON.stringify({
         [token.asset_id]: JSON.stringify(token),
@@ -345,7 +359,7 @@ const confirmTokenCreationWithTransactionId = async (
 
       const response = await request({
         method: "get",
-        url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/transactions/${transactionId}`,
+        url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/transactions/${transactionId}`,
       });
 
       const data = JSON.parse(response);
@@ -371,7 +385,7 @@ const confirmTokenCreationWithTransactionId = async (
 app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     const tokenizeRequestOptions = {
-      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens`,
+      url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`,
       method: "post",
       body: JSON.stringify({
         token: {
@@ -420,7 +434,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
 
 const sendParseDetokRequest = async (detokString) => {
   try {
-    const url = `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
     const response = await request({
       method: "get",
       url,
@@ -435,7 +449,7 @@ const sendParseDetokRequest = async (detokString) => {
 
 const getOrgMetaData = async (orgUid) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
     const response = await request({
       method: "get",
       headers: addCadtApiKeyHeader(),
@@ -451,7 +465,7 @@ const getOrgMetaData = async (orgUid) => {
 
 const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
     const response = await request({
       method: "get",
       headers: addCadtApiKeyHeader(),
@@ -467,7 +481,7 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
 
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
     const response = await request({
       method: "get",
       headers: addCadtApiKeyHeader(),
@@ -569,7 +583,7 @@ app.post("/confirm-detokanization", async (req, res) => {
 
     const confirmDetokanizationResponse = await request({
       method: "put",
-      url: `${CONFIG.TOKENIZE_DRIVER_HOST}/v1/tokens/${assetId}/detokenize`,
+      url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/${assetId}/detokenize`,
       body: JSON.stringify(confirmDetokanizationBody),
       headers: { "Content-Type": "application/json" },
     });
@@ -609,19 +623,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add optional API key if set in .env file
-app.use(function (req, res, next) {
-  if (CONFIG.API_KEY && CONFIG.API_KEY !== "") {
-    const apikey = req.header("x-api-key");
-    if (CONFIG.API_KEY === apikey) {
-      next();
-    } else {
-      res.status(403).json({ message: "API key not found" });
-    }
-  } else {
-    next();
-  }
-});
+
 
 app.listen(port, () => {
   console.log(`Application is running on port ${port}.`);
