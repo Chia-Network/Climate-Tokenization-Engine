@@ -32,7 +32,8 @@ jobs:
             build-command: npm run create-win-x64-dist
 
     steps:
-      - uses: Chia-Network/actions/clean-workspace@main
+      - name: Clean workspace
+        uses: Chia-Network/actions/clean-workspace@main
 
       - name: Checkout Code
         uses: actions/checkout@v3
