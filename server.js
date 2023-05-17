@@ -636,6 +636,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(port, () => {
-  console.log(`Application is running on port ${port}.`);
-});
+if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
+  app.listen(port, () => {
+    console.log(`Application is running on port ${port}.`);
+  });
+} else {
+  console.log("Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml");
+}
