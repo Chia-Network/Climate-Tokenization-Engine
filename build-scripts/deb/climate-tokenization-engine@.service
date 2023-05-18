@@ -1,0 +1,34 @@
+#
+# Climate Tokenization Engine init file for systemd. To
+# start the Climate Tokenization Engine service
+# using systemd, execute `systemctl start
+# climate-tokenization-engine@<USERNAME>`
+# where <USERNAME> is the Linux user you wish to run
+# the Climate Tokenization Engine as. Normally you'll
+# run Climate Tokenization Engine on the same system
+# as the Chia Wallet and Data Layer and you need to run
+# Climate Tokenization Engine as the same user as Chia.
+#
+# For example, if running Chia as the ubuntu user
+# with your $CHIA_ROOT directory at /home/ubuntu/.chia,
+# then start Climate Tokenization Engine with the command
+#
+# `systemctl start climate-tokenization-engine@ubuntu`
+#
+
+[Unit]
+Description=Climate Tokenization Engine
+
+[Service]
+# Set Chia directory as an environment variable
+Environment=CHIA_ROOT=/home/%i/.chia/mainnet
+
+# CADT executable
+ExecStart=/opt/climate-tokenization-engine/climate-tokenization-engine
+
+# Start the software with `systemctl start climate-tokenization-engine@username`
+User=%i
+Group=%i
+
+[Install]
+WantedBy=multi-user.target
