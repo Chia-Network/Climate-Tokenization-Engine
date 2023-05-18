@@ -1,6 +1,6 @@
 {
-  "name": "climate-portal",
-  "version": "1.0.8",
+  "name": "climate-tokenization-engine",
+  "version": "1.0.9",
   "bin": "./server.js",
   "description": "",
   "main": "proxy.js",
@@ -18,14 +18,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Chia-Network/Climate-Portal.git"
+    "url": "git+https://github.com/Chia-Network/climate-tokenization-engine.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Chia Networks Inc",
+  "license": "Apache",
   "bugs": {
-    "url": "https://github.com/Chia-Network/Climate-Portal/issues"
+    "url": "https://github.com/Chia-Network/climate-tokenization-engine/issues"
   },
-  "homepage": "https://github.com/Chia-Network/Climate-Portal#readme",
+  "homepage": "https://github.com/Chia-Network/climate-tokenization-engine#readme",
   "dependencies": {
     "body-parser": "^1.20.0",
     "cors": "^2.8.5",
@@ -37,6 +37,8 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "request-promise": "^4.2.6",
-    "unzipper": "^0.10.11"
+    "unzipper": "^0.10.11",
+    "winston": "^3.8.2",
+    "winston-daily-rotate-file": "^4.7.1"
   }
 }

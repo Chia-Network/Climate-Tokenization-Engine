@@ -4,12 +4,22 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
+const getChiaRoot = () => {
+  if (process.env.CHIA_ROOT) {
+    return path.resolve(process.env.CHIA_ROOT);
+  } else {
+    const homeDir = os.homedir();
+    return path.resolve(`${homeDir}/.chia/mainnet`);
+  }
+}
+
 const defaultConfig = require("./defaultConfig.json");
-const homeDir = os.homedir();
-const persistanceFolderPath = `${homeDir}/.chia/climate-portal`;
+const chiaRoot = getChiaRoot();
+const persistanceFolderPath = `${chiaRoot}/climate-tokenization-engine`;
 const configFilePath = path.resolve(`${persistanceFolderPath}/config.yaml`);
 
 const getConfig = () => {
+
   try {
     if (!fs.existsSync(configFilePath)) {
       try {
@@ -44,4 +54,5 @@ const updateConfig = (updates) => {
   }
 };
 
-module.exports = { getConfig, updateConfig };
+
+module.exports = { getConfig, updateConfig, getChiaRoot };
