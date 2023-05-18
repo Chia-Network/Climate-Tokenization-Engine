@@ -10,13 +10,13 @@ const os = require("os");
 const formData = require("express-form-data");
 
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const http = require("http");
 
 const validator = joiExpress.createValidator({ passError: true });
 
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
 const { getStoreIds } = require("./datalayer.js");
+const { logger } = require("./utils/logger");
 
 const app = express();
 const port = 31311;
@@ -36,6 +36,7 @@ app.use("/*", function (req, res, next) {
     res.header("Access-Control-Expose-Headers", "x-org-uid");
     res.header("x-org-uid", CONFIG.HOME_ORG);
   }
+  logger.debug(req.headers, {"method": req.method, "url": req.url});
   next();
 });
 
@@ -91,12 +92,14 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
       message: "Error connecting orgUid",
       error: error.message,
     });
+    logger.error(`Error connecting orgUid ${error.message}`)
   }
 });
 
 app.use(async function (req, res, next) {
   try {
     if (CONFIG.HOME_ORG === null) {
+      logger.error("Configuration does not contain valid HOME_ORG");
       throw new Error("Home Org does not exist.");
     }
     next();
@@ -271,6 +274,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       "Could not update unit marketplace identifier with asset id.",
       error
     );
+    logger.error(`Could not update unit marketplace identifier with asset id: ${error.message}`);
   }
 };
 
@@ -303,6 +307,7 @@ const confirmTokenRegistrationOnWarehouse = async (
         );
       }
     } catch (error) {
+      logger.error(`Error confirming token registration on warehouse: ${error.message}`);
       return false;
     }
   }
@@ -338,13 +343,10 @@ const registerTokenCreationOnClimateWarehouse = async (
         );
       }
     } else {
-      console.log("Could not register token creation on climate warehouse.");
+      logger.error("Could not register token creation on climate warehouse.");
     }
   } catch (error) {
-    console.log(
-      "Could not register token creation on climate warehouse.",
-      error.message
-    );
+    logger.error(`Could not register token creation on climate warehouse: ${error.message}`)
   }
 };
 
@@ -376,6 +378,7 @@ const confirmTokenCreationWithTransactionId = async (
         );
       }
     } catch (error) {
+      logger.error(`Error confirming token creation with transaction id ${transactionId}: ${error.message}`)
       return false;
     }
   }
@@ -429,6 +432,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       message: "Error token could not be created",
       error: error.message,
     });
+    logger.error(`Error tokenizing: ${error.message}`)
   }
 });
 
@@ -459,6 +463,7 @@ const getOrgMetaData = async (orgUid) => {
     const data = JSON.parse(response);
     return data;
   } catch (error) {
+    logger.error(`Could not get org meta data: ${error.message}`)
     throw new Error(`Could not get org meta data: ${error}`);
   }
 };
@@ -475,6 +480,7 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
     const data = JSON.parse(response);
     return data[0];
   } catch (error) {
+    logger.error(`Could not get corresponding project data: ${error.message}`);
     throw new Error(`Could not get corresponding project data: ${error}`);
   }
 };
@@ -490,6 +496,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
 
     return response;
   } catch (err) {
+    logger.error(`Could not get tokenized unit by asset id. ${err.message}`)
     throw new Error(`Could not get tokenized unit by asset id. ${err}`);
   }
 };
@@ -569,6 +576,7 @@ app.post("/parse-detok-file", async (req, res) => {
       message: "File could not be detokenized.",
       error: error.message,
     });
+    logger.error(`File could not be detokenized: ${error.message}`)
   }
 });
 
@@ -594,18 +602,23 @@ app.post("/confirm-detokanization", async (req, res) => {
       message: "Detokanization could not be confirmed",
       error: error.message,
     });
+    logger.error(`Detokanization could not be confirmed: ${error.message}`)
   }
 });
 
 app.use((err, req, res, next) => {
   if (err) {
+    logger.error(err);
+
     if (_.get(err, "error.details")) {
+      const errorString = err.error.details.map((detail) => {
+        return _.get(detail, "context.message", detail.message);
+      });
+
       // format Joi validation errors
       return res.status(400).json({
         message: "Data Validation error",
-        errors: err.error.details.map((detail) => {
-          return _.get(detail, "context.message", detail.message);
-        }),
+        errors: errorString,
       });
     }
 
@@ -623,7 +636,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
   app.listen(port, () => {
     console.log(`Application is running on port ${port}.`);
@@ -631,4 +643,3 @@ if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
 } else {
   console.log("Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml");
 }
-
