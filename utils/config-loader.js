@@ -15,7 +15,7 @@ const getChiaRoot = () => {
 
 const defaultConfig = require("./defaultConfig.json");
 const chiaRoot = getChiaRoot();
-const persistanceFolderPath = `${chiaRoot}/climate-portal`;
+const persistanceFolderPath = `${chiaRoot}/climate-tokenization-engine`;
 const configFilePath = path.resolve(`${persistanceFolderPath}/config.yaml`);
 
 const getConfig = () => {
