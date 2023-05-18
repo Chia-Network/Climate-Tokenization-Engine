@@ -2,8 +2,6 @@ name: Build Binaries
 
 on:
   push:
-    branches:
-      - main
     tags:
       - '**'
   pull_request:
@@ -224,8 +222,8 @@ jobs:
       - name: Download Linux x64 deb
         uses: actions/download-artifact@v3
         with:
-          name: climate-tokenization-engine-linux-x64
-          path: climate-tokenization-engine-linux-x64
+          name: climate-tokenization-engine-linux-x64-deb
+          path: climate-tokenization-engine-linux-x64-deb
 
       - name: Get tag name
         id: tag-name
