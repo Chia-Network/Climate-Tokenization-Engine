@@ -9,7 +9,7 @@ const { combine, timestamp, json } = winston.format;
 
 
 const createLogger = () => {
-    const logLocation = `${getChiaRoot()}/climate-portal/logs`;
+    const logLocation = `${getChiaRoot()}/climate-tokenization-engine/logs`;
     const logRetentionDays = `${getConfig().LOG_RETENTION_DAYS || 30}d`;
 
     try {
