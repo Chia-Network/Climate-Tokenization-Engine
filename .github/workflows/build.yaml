@@ -244,4 +244,4 @@ jobs:
             climate-tokenization-engine-windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
-            climate-tokenization-engine-linux-x64/*.deb
+            climate-tokenization-engine-linux-x64-deb/*.deb
