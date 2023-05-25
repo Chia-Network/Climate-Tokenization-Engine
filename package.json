@@ -29,7 +29,7 @@
   "dependencies": {
     "body-parser": "^1.20.0",
     "cors": "^2.8.5",
-    "express": "^4.18.1",
+    "express": "^4.18.2",
     "express-form-data": "^2.0.19",
     "express-joi-validation": "^5.0.1",
     "http-proxy-middleware": "^2.0.6",
