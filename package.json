@@ -37,7 +37,7 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "request-promise": "^4.2.6",
-    "unzipper": "^0.10.11",
+    "unzipper": "^0.10.14",
     "winston": "^3.8.2",
     "winston-daily-rotate-file": "^4.7.1"
   }
