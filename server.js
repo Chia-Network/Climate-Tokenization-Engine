@@ -1,6 +1,6 @@
 "use strict";
 
-const request = require("request-promise");
+const superagent = require("superagent");
 const _ = require("lodash");
 const express = require("express");
 const joiExpress = require("express-joi-validation");
@@ -36,7 +36,7 @@ app.use("/*", function (req, res, next) {
     res.header("Access-Control-Expose-Headers", "x-org-uid");
     res.header("x-org-uid", CONFIG.HOME_ORG);
   }
-  logger.debug(req.headers, {"method": req.method, "url": req.url});
+  logger.debug(req.headers, { method: req.method, url: req.url });
   next();
 });
 
@@ -61,7 +61,10 @@ const updateQueryWithParam = (query, ...params) => {
 
 // Add optional API key if set in config file
 app.use(function (req, res, next) {
-  if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== "") {
+  if (
+    CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY &&
+    CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY !== ""
+  ) {
     const apikey = req.header("x-api-key");
     if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
       next();
@@ -92,7 +95,7 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
       message: "Error connecting orgUid",
       error: error.message,
     });
-    logger.error(`Error connecting orgUid ${error.message}`)
+    logger.error(`Error connecting orgUid ${error.message}`);
   }
 });
 
@@ -149,7 +152,7 @@ app.use(
       if (CONFIG.CADT_API_KEY) {
         proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
       }
-    }
+    },
   })
 );
 
@@ -180,7 +183,7 @@ app.use(
       if (CONFIG.CADT_API_KEY) {
         proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
       }
-    }
+    },
   })
 );
 
@@ -226,7 +229,7 @@ app.use(
       if (CONFIG.CADT_API_KEY) {
         proxyReq.setHeader("x-api-key", CONFIG.CADT_API_KEY);
       }
-    }
+    },
   })
 );
 
@@ -235,13 +238,12 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   asset_id
 ) => {
   try {
-    const unitToBeUpdatedResponse = await request({
-      method: "get",
-      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
-      headers: addCadtApiKeyHeader()
-    });
+    const unitToBeUpdatedResponse = await superagent
+      .get(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+      .query({ warehouseUnitId: warehouseUnitId })
+      .set(addCadtApiKeyHeader());
 
-    const unitToBeUpdated = JSON.parse(unitToBeUpdatedResponse);
+    const unitToBeUpdated = unitToBeUpdatedResponse.body;
     unitToBeUpdated.marketplaceIdentifier = asset_id;
 
     delete unitToBeUpdated?.issuance?.orgUid;
@@ -255,26 +257,24 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 
     let headers = addCadtApiKeyHeader({ "Content-Type": "application/json" });
 
-    const updateUnitResponse = await request({
-      method: "put",
-      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
-      body: JSON.stringify(unitToBeUpdated),
-      headers: headers,
-    });
+    const updateUnitResponse = await superagent
+      .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+      .send(unitToBeUpdated)
+      .set(headers);
 
-    const data = JSON.parse(updateUnitResponse);
+    const data = updateUnitResponse.body;
 
-    await request({
-      method: "post",
-      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/commit`,
-      headers: headers,
-    });
+    await superagent
+      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/staging/commit`)
+      .set(headers);
   } catch (error) {
     console.log(
       "Could not update unit marketplace identifier with asset id.",
       error
     );
-    logger.error(`Could not update unit marketplace identifier with asset id: ${error.message}`);
+    logger.error(
+      `Could not update unit marketplace identifier with asset id: ${error.message}`
+    );
   }
 };
 
@@ -287,13 +287,11 @@ const confirmTokenRegistrationOnWarehouse = async (
     try {
       await new Promise((resolve) => setTimeout(() => resolve(), 30000));
 
-      const response = await request({
-        method: "get",
-        url: `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/hasPendingTransactions`,
-        headers: addCadtApiKeyHeader()
-      });
+      const response = await superagent
+        .get(`${CONFIG.CADT_API_SERVER_HOST}/v1/staging/hasPendingTransactions`)
+        .set(addCadtApiKeyHeader());
 
-      const data = JSON.parse(response);
+      const data = response.body;
       const thereAreNoPendingTransactions = data?.confirmed;
 
       if (thereAreNoPendingTransactions) {
@@ -307,7 +305,9 @@ const confirmTokenRegistrationOnWarehouse = async (
         );
       }
     } catch (error) {
-      logger.error(`Error confirming token registration on warehouse: ${error.message}`);
+      logger.error(
+        `Error confirming token registration on warehouse: ${error.message}`
+      );
       return false;
     }
   }
@@ -319,16 +319,12 @@ const registerTokenCreationOnClimateWarehouse = async (
   warehouseUnitId
 ) => {
   try {
-    const response = await request({
-      url: `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`,
-      method: "post",
-      body: JSON.stringify({
-        [token.asset_id]: JSON.stringify(token),
-      }),
-      headers: addCadtApiKeyHeader({ "Content-Type": "application/json" }),
-    });
+    const response = await superagent
+      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+      .send({ [token.asset_id]: JSON.stringify(token) })
+      .set(addCadtApiKeyHeader({ "Content-Type": "application/json" }));
 
-    const data = JSON.parse(response);
+    const data = response.body;
 
     if (
       data.message ===
@@ -346,7 +342,9 @@ const registerTokenCreationOnClimateWarehouse = async (
       logger.error("Could not register token creation on climate warehouse.");
     }
   } catch (error) {
-    logger.error(`Could not register token creation on climate warehouse: ${error.message}`)
+    logger.error(
+      `Could not register token creation on climate warehouse: ${error.message}`
+    );
   }
 };
 
@@ -359,12 +357,11 @@ const confirmTokenCreationWithTransactionId = async (
     try {
       await new Promise((resolve) => setTimeout(() => resolve(), 30000));
 
-      const response = await request({
-        method: "get",
-        url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/transactions/${transactionId}`,
-      });
+      const response = await superagent.get(
+        `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/transactions/${transactionId}`
+      );
 
-      const data = JSON.parse(response);
+      const data = response.body;
       const isTokenCreationConfirmed = data?.record?.confirmed;
 
       if (isTokenCreationConfirmed) {
@@ -378,7 +375,9 @@ const confirmTokenCreationWithTransactionId = async (
         );
       }
     } catch (error) {
-      logger.error(`Error confirming token creation with transaction id ${transactionId}: ${error.message}`)
+      logger.error(
+        `Error confirming token creation with transaction id ${transactionId}: ${error.message}`
+      );
       return false;
     }
   }
@@ -387,10 +386,9 @@ const confirmTokenCreationWithTransactionId = async (
 
 app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
-    const tokenizeRequestOptions = {
-      url: `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`,
-      method: "post",
-      body: JSON.stringify({
+    const response = await superagent
+      .post(`${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`)
+      .send({
         token: {
           org_uid: req.body.org_uid,
           warehouse_project_id: req.body.warehouse_project_id,
@@ -401,11 +399,10 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
           amount: (req.body.amount || 1) * 1000,
           to_address: req.body.to_address,
         },
-      }),
-      headers: { "Content-Type": "application/json" },
-    };
-    const response = await request(tokenizeRequestOptions);
-    const data = JSON.parse(response);
+      })
+      .set({ "Content-Type": "application/json" });
+
+    const data = response.body;
     const isTokenCreationPending = Boolean(data?.tx?.id);
 
     if (isTokenCreationPending) {
@@ -432,20 +429,16 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       message: "Error token could not be created",
       error: error.message,
     });
-    logger.error(`Error tokenizing: ${error.message}`)
+    logger.error(`Error tokenizing: ${error.message}`);
   }
 });
 
 const sendParseDetokRequest = async (detokString) => {
   try {
     const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
-    const response = await request({
-      method: "get",
-      url,
-    });
+    const response = await superagent.get(url);
 
-    const data = JSON.parse(response);
-    return data;
+    return response.body;
   } catch (error) {
     throw new Error(`Detokenize api could not process request: ${error}`);
   }
@@ -454,16 +447,11 @@ const sendParseDetokRequest = async (detokString) => {
 const getOrgMetaData = async (orgUid) => {
   try {
     const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
-    const response = await request({
-      method: "get",
-      headers: addCadtApiKeyHeader(),
-      url,
-    });
+    const response = await superagent.get(url).set(addCadtApiKeyHeader());
 
-    const data = JSON.parse(response);
-    return data;
+    return response.body;
   } catch (error) {
-    logger.error(`Could not get org meta data: ${error.message}`)
+    logger.error(`Could not get org meta data: ${error.message}`);
     throw new Error(`Could not get org meta data: ${error}`);
   }
 };
@@ -471,14 +459,9 @@ const getOrgMetaData = async (orgUid) => {
 const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
     const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
-    const response = await request({
-      method: "get",
-      headers: addCadtApiKeyHeader(),
-      url,
-    });
+    const response = await superagent.get(url).set(addCadtApiKeyHeader());
 
-    const data = JSON.parse(response);
-    return data[0];
+    return response.body[0];
   } catch (error) {
     logger.error(`Could not get corresponding project data: ${error.message}`);
     throw new Error(`Could not get corresponding project data: ${error}`);
@@ -488,16 +471,12 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
     const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
-    const response = await request({
-      method: "get",
-      headers: addCadtApiKeyHeader(),
-      url,
-    });
+    const response = await superagent.get(url).set(addCadtApiKeyHeader());
 
-    return response;
-  } catch (err) {
-    logger.error(`Could not get tokenized unit by asset id. ${err.message}`)
-    throw new Error(`Could not get tokenized unit by asset id. ${err}`);
+    return response.body;
+  } catch (error) {
+    logger.error(`Could not get tokenized unit by asset id. ${error.message}`);
+    throw new Error(`Could not get tokenized unit by asset id. ${error}`);
   }
 };
 
@@ -514,7 +493,7 @@ const addCadtApiKeyHeader = (headers = {}) => {
   }
 
   return headers;
-}
+};
 
 app.post("/parse-detok-file", async (req, res) => {
   try {
@@ -576,7 +555,7 @@ app.post("/parse-detok-file", async (req, res) => {
       message: "File could not be detokenized.",
       error: error.message,
     });
-    logger.error(`File could not be detokenized: ${error.message}`)
+    logger.error(`File could not be detokenized: ${error.message}`);
   }
 });
 
@@ -602,7 +581,7 @@ app.post("/confirm-detokanization", async (req, res) => {
       message: "Detokanization could not be confirmed",
       error: error.message,
     });
-    logger.error(`Detokanization could not be confirmed: ${error.message}`)
+    logger.error(`Detokanization could not be confirmed: ${error.message}`);
   }
 });
 
@@ -641,5 +620,7 @@ if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
     console.log(`Application is running on port ${port}.`);
   });
 } else {
-  console.log("Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml");
+  console.log(
+    "Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml"
+  );
 }
