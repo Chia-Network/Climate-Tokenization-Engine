@@ -4,9 +4,20 @@ The Climate Tokenization Engine is open source software that allows carbon regis
 
 By using the Climate Tokenization Engine, registries are able to control what gets tokenized, and can easily track on chain activity for any created tokens. This gives the registry ultimate control over the data to ensure the registry is able to maintain data integrity, while engaging with expanded markets that exist on blockchain.
 
-This application integrates closely with the [Climate Action Data Trust](https://github.com/Chia-Network/cadt) application and was developed to integrate with the [Chia Blockchain](https://github.com/Chia-Network/chia-blockchain.)  A graphical user interface is available with the [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI).
+A graphical user interface is available with the [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI).
 
 *Note that this application was previously known as the Climate Portal.*
+
+## Related Projects
+
+* [Chia Blockchain](https://github.com/Chia-Network/chia-blockchain)
+* [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI)
+* [Climate Explorer](https://github.com/Chia-Network/climate-token-driver)
+* [Chia Climate Tokenization](https://github.com/Chia-Network/climate-token-driver)
+* [Climate Explorer UI](https://github.com/Chia-Network/climate-explorer-ui)
+* [Climate Wallet](https://github.com/Chia-Network/Climate-Wallet)
+* [Climate Action Data Trust](https://github.com/Chia-Network/cadt)
+* [Climate Action Data Trust UI](https://github.com/Chia-Network/cadt-ui)
 
 ## Installation
 
@@ -28,8 +39,12 @@ The first part of this is the commit "type". The most common types are "feat" fo
 - `docs` for documentation only changes
 - `style` is for code formatting only
 - `refactor` is for changes to code which should not be detectable by users or testers
+- `perf` is for a code change that improves performance
 - `test` is for changes which only touch test files or related tooling
 - `build` is for changes which only touch our develop/release tools
+- `ci` is for changes to the continuous integration files and scripts
+- `chore` is for changes that don't modify code, like a version bump
+- `revert` is for reverting a previous commit
   ​
   After the type and scope there should be a colon.
   ​
