@@ -1,6 +1,6 @@
 {
   "name": "climate-tokenization-engine",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "bin": "./server.js",
   "description": "",
   "main": "proxy.js",
@@ -27,18 +27,21 @@
   },
   "homepage": "https://github.com/Chia-Network/climate-tokenization-engine#readme",
   "dependencies": {
-    "body-parser": "^1.20.0",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "express": "^4.18.1",
-    "express-form-data": "^2.0.19",
+    "express": "^4.18.2",
+    "express-form-data": "^2.0.22",
     "express-joi-validation": "^5.0.1",
     "http-proxy-middleware": "^2.0.6",
-    "joi": "^17.6.1",
+    "joi": "^17.9.2",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
-    "request-promise": "^4.2.6",
-    "unzipper": "^0.10.11",
-    "winston": "^3.8.2",
+    "superagent": "^8.0.9",
+    "unzipper": "^0.10.14",
+    "winston": "^3.9.0",
     "winston-daily-rotate-file": "^4.7.1"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }
