@@ -25,6 +25,10 @@ Precompiled packages are available for MacOS, Windows, and Debian-based Linux di
 
 ## Developer Guide
 
+### Commiting
+
+[Signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) are required. 
+
 ​This repo uses a commit convention. A typical commit message might read:
 ​
 ```
@@ -49,5 +53,7 @@ The first part of this is the commit "type". The most common types are "feat" fo
 After the type and scope there should be a colon.
  ​
 The "subject" of the commit follows. It should be a short indication of the change. The commit convention prefers that this is written in the present-imperative tense.
+
+### Branch Layout
 
 All pull-requests should be made against the `develop` branch.  New releases will be created by merging `develop` into `main`. 
