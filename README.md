@@ -4,6 +4,8 @@ The Climate Tokenization Engine is open source software that allows carbon regis
 
 By using the Climate Tokenization Engine, registries are able to control what gets tokenized, and can easily track on chain activity for any created tokens. This gives the registry ultimate control over the data to ensure the registry is able to maintain data integrity, while engaging with expanded markets that exist on blockchain.
 
+The Climate Tokenization Engine requires a [CADT](https://github.com/Chia-Network/cadt) instance (not running in read-only mode) to connect to.  We recommend running CADT on the same system as the Tokenization Engine for ease of use and enhanced security.
+
 A graphical user interface is available with the [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI).
 
 *Note that this application was previously known as the Climate Portal.*
