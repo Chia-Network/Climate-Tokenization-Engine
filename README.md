@@ -46,8 +46,8 @@ The first part of this is the commit "type". The most common types are "feat" fo
 - `chore` is for changes that don't modify code, like a version bump
 - `revert` is for reverting a previous commit
   ​
-  After the type and scope there should be a colon.
-  ​
-  The "subject" of the commit follows. It should be a short indication of the change. The commit convention prefers that this is written in the present-imperative tense.
+After the type and scope there should be a colon.
+ ​
+The "subject" of the commit follows. It should be a short indication of the change. The commit convention prefers that this is written in the present-imperative tense.
 
-  All pull-requests should be made against the `develop` branch.  New releases will be created by merging `develop` into `main`. 
+All pull-requests should be made against the `develop` branch.  New releases will be created by merging `develop` into `main`. 
