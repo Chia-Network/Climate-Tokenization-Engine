@@ -22,6 +22,7 @@ jobs:
           - runs-on: ubuntu-latest
             artifact-name: climate-tokenization-engine-linux-x64
             build-command: npm run create-linux-x64-dist
+
           - runs-on: macos-latest
             artifact-name: climate-tokenization-engine-macos-x64
             build-command: npm run create-mac-x64-dist
