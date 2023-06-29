@@ -29,12 +29,12 @@ Precompiled packages are available for MacOS, Windows, and Debian-based Linux di
 
 In the `CHIA_ROOT` directory (usually `~/.chia/mainnet` on Linux), Climate Tokenization Engine will add a directory called `climate-tokenization-engine` when the application is first run (in fact, this directory could be deleted at any time and it will be recreated the next time it is started).  The main Climate Tokenization Engine configuration file is called `config.yaml` and can be found in this directory.  The options in this file are as follows:
 
-* **DATA_LAYER_HOST**: Defaults to https://localhost:8562 which is where the Chia DataLayer service should be running. This should only be changed if Chia is running on a different machine than the Climate Tokenization Engine.
+* **DATA_LAYER_HOST**: Defaults to https://localhost:8562 which is where the Chia DataLayer service should be running. This should only be changed if Chia is running on a different machine than the Climate Tokenization Engine, or DataLayer is running on a non-standard port.
 * **HOME_ORG**:  The OrgUid that has been created by [CADT](https://github.com/Chia-Network/cadt). You can find this OrgUid by using the [Climate Action Data Trust UI](https://github.com/Chia-Network/cadt-ui) in the `My Organization` section.
 * **CLIMATE_TOKENIZATION_ENGINE_API_KEY**: Set the API key used to access the Climate Tokenization Engine service. This is useful if you plan to use the [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI) remotely to access the service.
 * **CADT_API_SERVER_HOST**: Defaults to localhost. It is strongly recommended to run the Climate Tokenization Engine on the same machine as the CADT API server.
 * **CADT_API_KEY**: If your CADT API server is protected with an API key, add the same key here so the Climate Tokenization Engine can make the proper requests to the CADT service.
-* **CLIMATE_TOKENIZATION_CHIA_HOST**: Defaults to localhost. It is strongly recommended to run the Climate Tokenization Engine on the same machine as the Climate Tokenization CHia host.
+* **CLIMATE_TOKENIZATION_CHIA_HOST**: Defaults to localhost. It is strongly recommended to run the Climate Tokenization Engine on the same machine as the Climate Tokenization Chia host.
 * **UPDATE_CLIMATE_WAREHOUSE**: Defaults to `FALSE`. Set this parameter to `TRUE` if you'd like CADT to automatically be updated when tokenization occurs.
 * **UNITS_FILTER**: This parameter determines which carbon units in CADT will show up as available to be tokenized in the Climate Tokenization Engine. By default, `Retired` `Cancelled` and `Expired` units will not be displayed as available to tokenize in the Climate Tokenization Engine.
 * **LOG_LEVEL**: Determines the amount of logs that get written by the service. Defaults to `INFO`, but can be set to `DEBUG` if necessary.
