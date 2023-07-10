@@ -22,6 +22,9 @@ jobs:
           - runs-on: ubuntu-latest
             artifact-name: climate-tokenization-engine-linux-x64
             build-command: npm run create-linux-x64-dist
+          - runs-on: [Linux, ARM64]
+            artifact-name: climate-tokenization-engine-linux-arm64
+            build-command: npm run create-linux-arm64-dist
           - runs-on: macos-latest
             artifact-name: climate-tokenization-engine-macos-x64
             build-command: npm run create-mac-x64-dist
@@ -148,14 +151,13 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build
-#      - build-linux-arm64
     strategy:
       matrix:
         include:
           - name: climate-tokenization-engine-linux-x64
             platform: amd64
-#          - name: climate-tokenization-engine-linux-arm64
-#            platform: arm64
+          - name: climate-tokenization-engine-linux-arm64
+            platform: arm64
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -214,17 +216,29 @@ jobs:
           name: climate-tokenization-engine-mac-installer
           path: climate-tokenization-engine-mac-installer
 
-      - name: Download Linux artifacts
+      - name: Download Linux x64 artifacts
         uses: actions/download-artifact@v3
         with:
           name: climate-tokenization-engine-linux-x64
           path: climate-tokenization-engine-linux-x64
+
+      - name: Download Linux ARM 64 artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: climate-tokenization-engine-linux-arm64
+          path: climate-tokenization-engine-linux-arm64
 
       - name: Download Linux x64 deb
         uses: actions/download-artifact@v3
         with:
           name: climate-tokenization-engine-linux-x64-deb
           path: climate-tokenization-engine-linux-x64-deb
+
+      - name: Download Linux arm64 deb
+        uses: actions/download-artifact@v3
+        with:
+          name: climate-tokenization-engine-linux-arm64-deb
+          path: climate-tokenization-engine-linux-arm64-deb
 
       - name: Get tag name
         id: tag-name
@@ -236,6 +250,7 @@ jobs:
           zip -r climate-tokenization-engine-windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-windows-x64
           zip -r climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-mac-installer
           zip -r climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-linux-x64
+          zip -r climate-tokenization-engine-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-linux-arm64
 
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
@@ -244,4 +259,6 @@ jobs:
             climate-tokenization-engine-windows-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            climate-tokenization-engine-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-deb/*.deb
+            climate-tokenization-engine-linux-arm64-deb/*.deb
