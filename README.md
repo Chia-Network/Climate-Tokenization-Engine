@@ -25,6 +25,49 @@ A graphical user interface is available with the [Climate Tokenization Engine Us
 
 Precompiled packages are available for MacOS, Windows, and Debian-based Linux distros on the [releases](https://github.com/Chia-Network/Climate-Tokenization-Engine/releases) page. 
 
+### Debian-based Linux Distros (Ubuntu, Mint, etc)
+
+The Climate Tokenization Engine can be installed with `apt`.  Both ARM and x86 versions can be installed this way. 
+
+1. Start by updating apt and allowing repository download over HTTPS:
+
+```
+sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+```
+
+2.  Add Chia's official GPG Key (if you have installed Chia with `apt`, you'll have this key already and will get a message about overwriting the existing key, which is safe to do):
+
+```
+curl -sL https://repo.chia.net/FD39E6D3.pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/chia.gpg
+```
+
+3. Use the following command to setup the repository.
+
+```
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/chia.gpg] https://repo.chia.net/climate-tokenization/debian/ stable main" | sudo tee /etc/apt/sources.list.d/climate-tokenization.list > /dev/null
+```
+
+4.  Install the Climate Tokenization Engine
+
+```
+sudo apt-get update
+sudo apt-get install climate-tokenization-engine
+```
+
+5.  Start the Climate Tokenization Engine with systemd
+
+```
+sudo systemctl start climate-tokenization-engine@<USERNAME>
+```
+For `<USERNAME>`, enter the user that Chia runs as (the user with the `.chia` directory in their home directory).  For example, if the `ubuntu` is where Chia runs, start the Climate Tokenization Engine with `systemctl start climate-tokenization-engine@ubuntu`.
+
+6.  Set the Climate Tokenization Engine to run at boot
+
+```
+sudo systemctl enable climate-tokenization-engine@<USERNAME>
+```
+
 ## Configuration
 
 In the `CHIA_ROOT` directory (usually `~/.chia/mainnet` on Linux), Climate Tokenization Engine will add a directory called `climate-tokenization-engine` when the application is first run (in fact, this directory could be deleted at any time and it will be recreated the next time it is started).  The main Climate Tokenization Engine configuration file is called `config.yaml` and can be found in this directory.  The options in this file are as follows:
