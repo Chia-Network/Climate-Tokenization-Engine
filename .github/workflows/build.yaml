@@ -262,3 +262,9 @@ jobs:
             climate-tokenization-engine-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-deb/*.deb
             climate-tokenization-engine-linux-arm64-deb/*.deb
+
+      - name: Trigger apt repo update
+        run: |
+          repo_name=echo "$GITHUB_REPOSITORY" | cut -d "/" -f 2
+          curl -s -XPOST -H "Authorization: Bearer ${{ secrets.GLUE_ACCESS_TOKEN }}" --data '{"climate_tokenization_repo":"$repo_name","application_name":"climate-tokenization-engine","release_version":"${{ steps.tag-name.outputs.TAGNAME }}","add_debian_version":"true","arm64_available":"true"}' ${{ secrets.GLUE_API_URL }}/api/v1/climate-tokenization/${{ github.sha }}/start
+          curl -s -XPOST -H "Authorization: Bearer ${{ secrets.GLUE_ACCESS_TOKEN }}" --data '{"climate_tokenization_repo":"$repo_name","application_name":"climate-tokenization-engine","release_version":"${{ steps.tag-name.outputs.TAGNAME }}","add_debian_version":"true","arm64_available":"true"}' ${{ secrets.GLUE_API_URL }}/api/v1/climate-tokenization/${{ github.sha }}/success/deploy
