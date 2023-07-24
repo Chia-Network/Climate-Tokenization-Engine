@@ -6,6 +6,7 @@
   "CADT_API_KEY": null,
   "UPDATE_CLIMATE_WAREHOUSE": false,
   "CLIMATE_TOKENIZATION_CHIA_HOST": "http://127.0.0.1:31312",
+  "CLIMATE_EXPLORER_HOST": "http://127.0.0.1:31313",
   "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not",
   "LOG_LEVEL": "info",
   "LOG_RETENTION_DAYS": "30"
