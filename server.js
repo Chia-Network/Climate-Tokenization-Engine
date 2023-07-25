@@ -438,7 +438,6 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
       throw new Error(data.error);
     }
   } catch (error) {
- 
     res.status(400).json({
       message: "Error token could not be created",
       error: error.message,
@@ -631,13 +630,16 @@ app.use((req, res, next) => {
 
 const bindAddress = getConfig().BIND_ADDRESS || "localhost";
 
-if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY && bindAddress !== "localhost") {
+if (
+  (bindAddress !== "localhost" && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) ||
+  bindAddress === "localhost"
+) {
   app.listen(port, bindAddress, () => {
     console.log(`Application is running on port ${port}.`);
   });
 
   setTimeout(() => {
-    scheduler.start();
+  //  scheduler.start();
   }, 5000);
 } else {
   console.log(

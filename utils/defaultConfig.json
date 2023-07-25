@@ -9,5 +9,6 @@
   "CLIMATE_EXPLORER_HOST": "http://127.0.0.1:31313",
   "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not",
   "LOG_LEVEL": "info",
-  "LOG_RETENTION_DAYS": "30"
+  "LOG_RETENTION_DAYS": "30",
+  "BIND_ADDRESS": "localhost"
 }
