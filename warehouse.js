@@ -1,14 +1,33 @@
-const request = require("request-promise");
+const superagent = require("superagent");
 
 const { getConfig } = require("./utils/config-loader");
 const CONFIG = getConfig();
 
+const addCadtApiKeyHeader = (headers = {}) => {
+  if (CONFIG.CADT_API_KEY) {
+    headers["x-api-key"] = CONFIG.CADT_API_KEY;
+  }
+
+  return headers;
+};
+
+const requestWrapper = async (method, url, body) => {
+  try {
+    const res = await superagent[method](url)
+      .set({ "Content-Type": "application/json" })
+      .send(body);
+    return res.text;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 const commitStagingData = async () => {
   try {
-    await request({
-      method: "post",
-      url: `${CONFIG.REGISTRY_HOST}/v1/staging/commit`,
-    });
+    await requestWrapper(
+      "post",
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/commit`
+    );
   } catch (error) {
     throw new Error(`Could not commit staging data on warehouse: ${error}`);
   }
@@ -16,10 +35,10 @@ const commitStagingData = async () => {
 
 const deleteStagingData = async () => {
   try {
-    await request({
-      method: "delete",
-      url: `${CONFIG.REGISTRY_HOST}/v1//staging/clean`,
-    });
+    await requestWrapper(
+      "delete",
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/clean`
+    );
   } catch (error) {
     throw new Error(`Could not delete staging data on warehouse: ${error}`);
   }
@@ -27,11 +46,10 @@ const deleteStagingData = async () => {
 
 const getHasPendingTransactions = async () => {
   try {
-    const response = await request({
-      method: "get",
-      url: `${CONFIG.REGISTRY_HOST}/v1/staging/hasPendingTransactions`,
-    });
-
+    const response = await requestWrapper(
+      "get",
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/hasPendingTransactions`
+    );
     const data = JSON.parse(response);
     return Boolean(data?.confirmed);
   } catch (error) {
@@ -55,12 +73,11 @@ const cleanUnitBeforeUpdating = (unit) => {
 
 const updateUnit = async (unitToBeUpdated) => {
   try {
-    await request({
-      method: "put",
-      url: `${CONFIG.REGISTRY_HOST}/v1/units`,
-      body: JSON.stringify(unitToBeUpdated),
-      headers: { "Content-Type": "application/json" },
-    });
+    await requestWrapper(
+      "put",
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
+      JSON.stringify(unitToBeUpdated)
+    );
   } catch (error) {
     throw new Error(`Warehouse unit could not be updated: ${error}`);
   }
@@ -95,12 +112,11 @@ const splitDetokenizeUnit = async (unit, amount) => {
   };
 
   try {
-    await request({
-      method: "post",
-      url: `${constants.API_HOST}/units/split`,
-      body: JSON.stringify(dataToBeSubmitted),
-      headers: { "Content-Type": "application/json" },
-    });
+    await requestWrapper(
+      "post",
+      `${constants.API_HOST}/units/split`,
+      JSON.stringify(dataToBeSubmitted)
+    );
   } catch (error) {
     throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
   }
@@ -108,12 +124,8 @@ const splitDetokenizeUnit = async (unit, amount) => {
 
 const getTokenizedUnitsByAssetId = async (assetId) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
-    const response = await request({
-      method: "get",
-      url,
-    });
-
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const response = await requestWrapper("get", url);
     return JSON.parse(response);
   } catch (err) {
     throw new Error(`Could not get tokenized unit by asset id. ${err}`);
@@ -122,12 +134,8 @@ const getTokenizedUnitsByAssetId = async (assetId) => {
 
 const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
-    const response = await request({
-      method: "get",
-      url,
-    });
-
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
+    const response = await requestWrapper("get", url);
     const data = JSON.parse(response);
     return data[0];
   } catch (error) {
@@ -137,11 +145,10 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
 
 const getUnitByWarehouseUnitId = async (warehouseUnitId) => {
   try {
-    const response = await request({
-      method: "get",
-      url: `${CONFIG.REGISTRY_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`,
-    });
-
+    const response = await requestWrapper(
+      "get",
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`
+    );
     const data = JSON.parse(response);
     return data;
   } catch (error) {
@@ -153,15 +160,12 @@ const getUnitByWarehouseUnitId = async (warehouseUnitId) => {
 
 const registerToken = async (token) => {
   try {
-    const response = await request({
-      url: `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata`,
-      method: "post",
-      body: JSON.stringify({
-        [token.asset_id]: token,
-      }),
-    });
+    const response = await superagent
+      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+      .send({ [token.asset_id]: JSON.stringify(token) })
+      .set(addCadtApiKeyHeader({ "Content-Type": "application/json" }));
 
-    const data = JSON.parse(response);
+    const data = response.body;
     return data;
   } catch (error) {
     throw new Error(`Could not register token on warehouse: ${error}`);
@@ -170,12 +174,8 @@ const registerToken = async (token) => {
 
 const getOrgMetaData = async (orgUid) => {
   try {
-    const url = `${CONFIG.REGISTRY_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
-    const response = await request({
-      method: "get",
-      url,
-    });
-
+    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const response = await requestWrapper("get", url);
     const data = JSON.parse(response);
     return data;
   } catch (error) {
