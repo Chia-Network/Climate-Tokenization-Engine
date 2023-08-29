@@ -205,11 +205,17 @@ jobs:
           name: climate-tokenization-engine-windows-x64
           path: climate-tokenization-engine-windows-x64
 
-      - name: Download MacOS artifacts
+      - name: Download MacOS installer artifacts
         uses: actions/download-artifact@v3
         with:
           name: climate-tokenization-engine-mac-installer
           path: climate-tokenization-engine-mac-installer
+
+      - name: Download MacOS executable artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: climate-tokenization-engine-macos-x64
+          path: climate-tokenization-engine-macos-x64
 
       - name: Download Linux x64 artifacts
         uses: actions/download-artifact@v3
@@ -246,6 +252,7 @@ jobs:
           zip -r climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-mac-installer
           zip -r climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-linux-x64
           zip -r climate-tokenization-engine-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-linux-arm64
+          zip -r climate-tokenization-engine-macos-binary-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-macos-x64
 
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
@@ -255,6 +262,7 @@ jobs:
             climate-tokenization-engine-macos-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            climate-tokenization-engine-macos-binary-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             climate-tokenization-engine-linux-x64-deb/*.deb
             climate-tokenization-engine-linux-arm64-deb/*.deb
 
