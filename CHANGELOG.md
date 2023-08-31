@@ -1,3 +1,7 @@
+## [1.2.1](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.2.0...1.2.1) (2023-08-31)
+
+
+
 # [1.2.0](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.1.5...1.2.0) (2023-08-29)
 
 
