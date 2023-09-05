@@ -1,56 +1,92 @@
 const { SimpleIntervalJob, Task } = require("toad-scheduler");
 const superagent = require("superagent");
 const { getConfig } = require("../utils/config-loader");
-const { getLastProcessedHeight } = require('../utils/coreRegApi');
+const {
+  getLastProcessedHeight,
+  getAssetUnitBlocks,
+  setLastProcessedHeight,
+} = require("../utils/coreRegApi");
+const warehouseApi = require("../warehouse");
+const { waitForAllTransactionsToConfirm } = require("../wallet");
 let CONFIG = getConfig();
 
 let isTaskInProgress = false;
 
 async function processResult({
-  marketPlaceIdentifier,
+  marketplaceIdentifier,
   amount,
   beneficiaryName,
   beneficiaryAddress,
 }) {
-  // return the CADT unit records that all match this marketPlaceIdentifier
-  const unitBlocks = await getAssetUnitBlocks(marketPlaceIdentifier);
+  try {
+    await waitForAllTransactionsToConfirm();
+    // return the CADT unit records that all match this marketplaceIdentifier
+    const unitBlocks = await getAssetUnitBlocks(marketplaceIdentifier);
 
-  // sort from smallest to largest
-  unitBlocks
-    .filter((unit) => unit.unitStatus !== "Retired")
-    .sort((a, b) => a.unitCount - b.unitCount);
+    // sort from smallest to largest
+    const units = unitBlocks?.body
+      .filter((unit) => unit.unitStatus !== "Retired")
+      .sort((a, b) => a.unitCount - b.unitCount);
 
-  let remainingAmountToRetire = amount;
-
-  for (let i = 0; i < unitBlocks.length && remainingAmountToRetire > 0; i++) {
-    const unit = unitBlocks[x];
-    const { unitCount } = unit;
-
-    if (unitCount <= remainingAmountToRetire) {
-      await warehouseApi.retireUnit(unit, beneficiaryName, beneficiaryAddress);
-      remainingAmountToRetire -= unitCount;
-    } else {
-      await warehouseApi.splitRetiredUnit(
-        unit,
-        remainingAmountToRetire,
-        beneficiaryName,
-        beneficiaryAddress
+    if (!units || units.length === 0) {
+      console.log(
+        "No units in CADT found for marketplaceIdentifier",
+        marketplaceIdentifier
       );
-      remainingAmountToRetire = 0;
+      return;
     }
-  }
 
-  // if there is a remaining amount to retire, then we have are attempting to retire more than we have
-  // we should rollback the staging data and throw an error
-  if (remainingAmountToRetire > 0) {
-    await warehouseApi.deleteStagingData();
-    throw new Error(
-      "Could not retire unit block. Total unitCount lower than needed retire amount."
-    );
-  }
+    let remainingAmountToRetire = amount;
 
-  // Everything went well, commit the staging data to the datalayer
-  await warehouseApi.commitStagingData();
+    for (let i = 0; i < units.length; i++) {
+      if (remainingAmountToRetire <= 0) {
+        break;
+      }
+
+      await waitForAllTransactionsToConfirm();
+
+      const unit = units[i];
+      const { unitCount } = unit;
+
+      console.log(unitCount, remainingAmountToRetire);
+
+      if (unitCount <= remainingAmountToRetire) {
+        await warehouseApi.retireUnit(
+          unit,
+          beneficiaryName,
+          beneficiaryAddress
+        );
+        remainingAmountToRetire -= unitCount;
+      } else {
+        await warehouseApi.splitUnit({
+          unit,
+          amount: remainingAmountToRetire,
+          beneficiaryName,
+          beneficiaryAddress,
+        });
+        remainingAmountToRetire = 0;
+      }
+    }
+
+    // if there is a remaining amount to retire, then we have are attempting to retire more than we have
+    // we should rollback the staging data and throw an error
+    if (remainingAmountToRetire > 0) {
+      await warehouseApi.deleteStagingData();
+      throw new Error(
+        "Could not retire unit block. Total unitCount lower than needed retire amount."
+      );
+    }
+
+    await waitForAllTransactionsToConfirm();
+    // Everything went well, commit the staging data to the datalayer
+    await warehouseApi.commitStagingData();
+    await new Promise((resolve) => setTimeout(() => resolve(), 5000));
+    await waitForAllTransactionsToConfirm();
+    console.log("Auto Retirement Process Complete");
+  } catch (err) {
+    console.trace(err);
+    throw new Error("Could not retire unit block", err);
+  }
 }
 
 function findHighestHeight(activities) {
@@ -87,37 +123,48 @@ async function getAndProcessActivities(minHeight = 0) {
         .query({
           page: page,
           limit: resultsLimit,
-          minHeight: minHeight,
+          minHeight: Number(minHeight) + 1,
           sort: "asc",
         })
         .timeout({
           response: 300000, // Wait 5 minutes for the server to start sending,
           deadline: 600000, // but allow 10 minutes for the file to finish loading.
-        });;
+        });
 
       // Assuming your API returns a JSON response
       const results = response.body;
 
-      console.log(`Retrieved ${results.activities.length} retirement records`);
+      // We only want to process the retirement activities
+      // Also filter by height so we don't process the same activity twice
+      // (this was already done by the api so this is just an extra check)
+      const retirements = results?.activities?.filter(
+        (activity) =>
+          activity.mode === "PERMISSIONLESS_RETIREMENT" &&
+          activity.height > Number(minHeight)
+      );
 
-      if (results?.activities?.length > 0) {
-        const activities = response.body.activities;
-        await activities.map((activity) => {
-          return processResult({
-            marketPlaceIdentifier: activity.cw_unit.marketPlaceIdentifier,
+      console.log(`Retrieved ${retirements.length || 0} retirement records`);
+
+      if (retirements.length > 0) {
+        for (const activity of retirements) {
+          console.log("Processing retirement", activity);
+          await processResult({
+            marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
+            // the amount is mojos but each climate token is 1000 mojos
+            // we want to convert the amount to climate tokens
             amount: activity.amount / 1000,
             beneficiaryName: activity.beneficiary_name,
             beneficiaryAddress: activity.beneficiary_address,
           });
-        });
+        }
 
-        const blockHeightsProcessed = findHighestHeight(activities);
+        const blockHeightsProcessed = findHighestHeight(retirements);
 
-        // Record the blockheight for each org
+        await waitForAllTransactionsToConfirm();
+        await setLastProcessedHeight(blockHeightsProcessed);
 
         page += 1;
       } else {
-        // No more results, break out of the loop
         break;
       }
     }

@@ -1,5 +1,6 @@
 {
   "DATA_LAYER_HOST": "https://localhost:8562",
+  "WALLET_HOST": "https://localhost:9256",
   "HOME_ORG": null,
   "CLIMATE_TOKENIZATION_ENGINE_API_KEY": null,
   "CADT_API_SERVER_HOST": "http://localhost:31310",
@@ -10,5 +11,6 @@
   "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not",
   "LOG_LEVEL": "info",
   "LOG_RETENTION_DAYS": "30",
-  "BIND_ADDRESS": "localhost"
+  "BIND_ADDRESS": "localhost",
+  "CERTIFICATE_FOLDER_PATH": null
 }

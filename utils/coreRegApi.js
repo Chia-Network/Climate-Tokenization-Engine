@@ -2,10 +2,16 @@ const superagent = require("superagent");
 const { getConfig } = require("./config-loader");
 let CONFIG = getConfig();
 
-const getAssetUnitBlocks = (marketPlaceIdentifier) => {
-  return superagent.get(
-    `${CONFIG.CADT_API_SERVER_HOST}/v1/units?filter=marketPlaceIdentifier:${marketPlaceIdentifier}:eq`
+const getAssetUnitBlocks = (marketplaceIdentifier) => {
+  const request = superagent.get(
+    `${CONFIG.CADT_API_SERVER_HOST}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
   );
+
+  if (CONFIG.CADT_API_KEY) {
+    request.set("x-api-key", CONFIG.CADT_API_KEY);
+  }
+
+  return request;
 };
 
 const splitRetiredUnit = async (
@@ -37,10 +43,16 @@ const splitRetiredUnit = async (
   };
 
   try {
-    await superagent
+    const request = superagent
       .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/units/split`)
       .send(splitData)
       .set({ "Content-Type": "application/json" });
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    await request;
   } catch (error) {
     throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
   }
@@ -55,10 +67,16 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 
 const updateUnit = async (unit) => {
   try {
-    await superagent
+    const request = superagent
       .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
       .send(unit)
       .set({ "Content-Type": "application/json" });
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    await request;
   } catch (error) {
     throw new Error(`Warehouse unit could not be updated: ${error}`);
   }
@@ -66,26 +84,45 @@ const updateUnit = async (unit) => {
 
 const getLastProcessedHeight = async () => {
   try {
-    const response = await superagent
+    const request = superagent
       .get(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
       .query({ orgUid: CONFIG.HOME_ORG });
-    const lastProcessedHeight = response.body["meta_last_retired_block_height"];
-    return lastProcessedHeight || 0;
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    const response = await request;
+
+    if (response.status !== 200) {
+      throw new Error(`Received non-200 status code: ${response.status}`);
+    }
+
+    const lastProcessedHeight = response.body["meta_lastRetiredBlockHeight"];
+    return Number(lastProcessedHeight || 0);
   } catch (error) {
-    throw new Error(`Could not get last processed height: ${error}`);
+    console.error(`Could not get last processed height: ${error}`);
+    throw error;
   }
 };
 
 const setLastProcessedHeight = async (height) => {
   try {
-    await superagent
-      .get(
-        `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`
-      )
-      .send({ last_retired_block_height: height })
+    console.log(`Setting last processed height to ${height}`);
+
+    const request = superagent
+      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+      .send({ lastRetiredBlockHeight: height.toString() })
       .set({ "Content-Type": "application/json" });
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    const response = await request;
+    console.log(response.body);
   } catch (error) {
-    throw new Error(`Could not update last processed height: ${error}`);
+    console.error(`Could not update last processed height: ${error}`);
   }
 };
 

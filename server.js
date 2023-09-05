@@ -70,7 +70,7 @@ app.use(function (req, res, next) {
     if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
       next();
     } else {
-      res.status(403).json({ message: "API key not found" });
+      res.status(403).json({ message: "CTE API key not found" });
     }
   } else {
     next();
@@ -246,6 +246,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 
     const unitToBeUpdated = unitToBeUpdatedResponse.body;
     unitToBeUpdated.marketplaceIdentifier = asset_id;
+    unitToBeUpdated.marketplace = "Tokenized on Chia";
 
     delete unitToBeUpdated?.issuance?.orgUid;
     delete unitToBeUpdated.issuanceId;
@@ -638,9 +639,11 @@ if (
     console.log(`Application is running on port ${port}.`);
   });
 
-  setTimeout(() => {
-  //  scheduler.start();
-  }, 5000);
+ // if (CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
+    setTimeout(() => {
+      scheduler.start();
+    }, 5000);
+  //}
 } else {
   console.log(
     "Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml"
