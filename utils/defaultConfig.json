@@ -1,7 +1,6 @@
 {
   "DATA_LAYER_HOST": "https://localhost:8562",
   "WALLET_HOST": "https://localhost:9256",
-  "HOME_ORG": null,
   "CLIMATE_TOKENIZATION_ENGINE_API_KEY": null,
   "CADT_API_SERVER_HOST": "http://localhost:31310",
   "CADT_API_KEY": null,

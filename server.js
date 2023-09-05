@@ -10,6 +10,8 @@ const os = require("os");
 const formData = require("express-form-data");
 const scheduler = require("./tasks");
 
+const { getHomeOrgUid } = require("./utils/coreRegApi");
+
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const validator = joiExpress.createValidator({ passError: true });
@@ -32,11 +34,14 @@ app.use(
   })
 );
 
-app.use("/*", function (req, res, next) {
-  if (CONFIG.HOME_ORG) {
+app.use("/*", async (req, res, next) => {
+  const homeOrgUid = await getHomeOrgUid();
+
+  if (homeOrgUid) {
     res.header("Access-Control-Expose-Headers", "x-org-uid");
-    res.header("x-org-uid", CONFIG.HOME_ORG);
+    res.header("x-org-uid", homeOrgUid);
   }
+
   logger.debug(req.headers, { method: req.method, url: req.url });
   next();
 });
@@ -102,10 +107,15 @@ app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
 
 app.use(async function (req, res, next) {
   try {
-    if (CONFIG.HOME_ORG === null) {
-      logger.error("Configuration does not contain valid HOME_ORG");
+    const homeOrgUid = await getHomeOrgUid();
+
+    if (homeOrgUid === null) {
+      logger.error(
+        "CADT does not contain valid HOME_ORG please create one to use this software"
+      );
       throw new Error("Home Org does not exist.");
     }
+
     next();
   } catch (err) {
     res.status(400).json({
@@ -122,6 +132,8 @@ app.use(
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
+      const homeOrgUid = await getHomeOrgUid();
+
       const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(
@@ -132,7 +144,7 @@ app.use(
         },
         {
           param: "orgUid",
-          value: CONFIG.HOME_ORG,
+          value: homeOrgUid,
         },
         {
           param: "includeProjectInfoInSearch",
@@ -143,10 +155,12 @@ app.use(
       const newPath = "/v1/units" + newQuery;
       return newPath;
     },
-    onProxyRes(proxyRes, req, res) {
-      if (CONFIG.HOME_ORG) {
+    async onProxyRes(proxyRes, req, res) {
+      const homeOrgUid = await getHomeOrgUid();
+
+      if (homeOrgUid) {
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
-        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+        proxyRes.headers["x-org-uid"] = homeOrgUid;
       }
     },
     onProxyReq(proxyReq) {
@@ -164,20 +178,22 @@ app.use(
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
+      const homeOrgUid = await getHomeOrgUid();
       const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(currentUrl.search, {
         param: "orgUid",
-        value: CONFIG.HOME_ORG,
+        value: homeOrgUid,
       });
 
       const newPath = "/v1/projects" + newQuery;
       return newPath;
     },
-    onProxyRes(proxyRes, req, res) {
-      if (CONFIG.HOME_ORG) {
+    async onProxyRes(proxyRes, req, res) {
+      const homeOrgUid = await getHomeOrgUid();
+      if (homeOrgUid) {
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
-        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+        proxyRes.headers["x-org-uid"] = homeOrgUid;
       }
     },
     onProxyReq(proxyReq) {
@@ -195,6 +211,7 @@ app.use(
     changeOrigin: true,
     secure: false,
     pathRewrite: async function (path, req) {
+      const homeOrgUid = await getHomeOrgUid();
       const currentUrl = new URL(`${CONFIG.CADT_API_SERVER_HOST}${path}`);
 
       const newQuery = updateQueryWithParam(
@@ -205,7 +222,7 @@ app.use(
         },
         {
           param: "orgUid",
-          value: CONFIG.HOME_ORG,
+          value: homeOrgUid,
         },
         {
           param: "includeProjectInfoInSearch",
@@ -220,10 +237,11 @@ app.use(
       const newPath = "/v1/units" + newQuery;
       return newPath;
     },
-    onProxyRes(proxyRes, req, res) {
-      if (CONFIG.HOME_ORG) {
+    async onProxyRes(proxyRes, req, res) {
+      const homeOrgUid = await getHomeOrgUid();
+      if (homeOrgUid) {
         proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
-        proxyRes.headers["x-org-uid"] = CONFIG.HOME_ORG;
+        proxyRes.headers["x-org-uid"] = homeOrgUid;
       }
     },
     onProxyReq(proxyReq) {
@@ -621,9 +639,11 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  if (CONFIG.HOME_ORG) {
-    res.setHeader(headerKeys.ORG_UID, CONFIG.HOME_ORG);
+app.use(async (req, res, next) => {
+  const homeOrgUid = await getHomeOrgUid();
+
+  if (homeOrgUid) {
+    res.setHeader(headerKeys.ORG_UID, homeOrgUid);
   }
 
   next();
