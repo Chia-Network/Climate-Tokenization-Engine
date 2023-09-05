@@ -1,3 +1,19 @@
+# [1.3.0](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.2.1...1.3.0) (2023-09-05)
+
+
+### Bug Fixes
+
+* typo ([ab647af](https://github.com/Chia-Network/climate-tokenization-engine/commit/ab647af2c60a1066fd0b4e2060683faa84c35d48))
+
+
+### Features
+
+* add babel to testsuit ([d0012df](https://github.com/Chia-Network/climate-tokenization-engine/commit/d0012df61c6903f915062ee71bd4fb743bdca797))
+* add retirement splitter ([413bf15](https://github.com/Chia-Network/climate-tokenization-engine/commit/413bf15cadb9f72c1f2fa278dde6a6fbf352e9db))
+* retirement splitter ([63eefa6](https://github.com/Chia-Network/climate-tokenization-engine/commit/63eefa6cb456f3eadfe8eb2dcac8e528d7b5978d))
+
+
+
 ## [1.2.1](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.2.0...1.2.1) (2023-08-31)
 
 
