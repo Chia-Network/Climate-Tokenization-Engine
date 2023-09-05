@@ -84,9 +84,11 @@ const updateUnit = async (unit) => {
 
 const getLastProcessedHeight = async () => {
   try {
+    const homeOrgUid = await getHomeOrgUid();
+    
     const request = superagent
       .get(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
-      .query({ orgUid: CONFIG.HOME_ORG });
+      .query({ orgUid: homeOrgUid });
 
     if (CONFIG.CADT_API_KEY) {
       request.set("x-api-key", CONFIG.CADT_API_KEY);
@@ -105,6 +107,45 @@ const getLastProcessedHeight = async () => {
     throw error;
   }
 };
+
+const getHomeOrgUid = async () => {
+  try {
+    const request = superagent.get(
+      `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations`
+    );
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    const response = await request;
+
+    if (response.status !== 200) {
+      throw new Error(`Received non-200 status code: ${response.status}`);
+    }
+
+    // Iterate through the response keys and find the object where "isHome" is true
+    let homeOrgUid = null;
+    for (const key in response.body) {
+      if (response.body[key].isHome === true) {
+        homeOrgUid = response.body[key].orgUid;
+        break;
+      }
+    }
+
+    if (!homeOrgUid) {
+      throw new Error(
+        'No organization with "isHome" equal to true found in the response'
+      );
+    }
+
+    return homeOrgUid;
+  } catch (error) {
+    console.error(`Could not get home organization UID: ${error}`);
+    return null;
+  }
+};
+
 
 const setLastProcessedHeight = async (height) => {
   try {
@@ -132,4 +173,5 @@ module.exports = {
   retireUnit,
   getLastProcessedHeight,
   setLastProcessedHeight,
+  getHomeOrgUid,
 };
