@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const os = require("os");
 const formData = require("express-form-data");
+const scheduler = require("./tasks");
 
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
@@ -69,7 +70,7 @@ app.use(function (req, res, next) {
     if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY === apikey) {
       next();
     } else {
-      res.status(403).json({ message: "API key not found" });
+      res.status(403).json({ message: "CTE API key not found" });
     }
   } else {
     next();
@@ -245,6 +246,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 
     const unitToBeUpdated = unitToBeUpdatedResponse.body;
     unitToBeUpdated.marketplaceIdentifier = asset_id;
+    unitToBeUpdated.marketplace = "Tokenized on Chia";
 
     delete unitToBeUpdated?.issuance?.orgUid;
     delete unitToBeUpdated.issuanceId;
@@ -386,6 +388,18 @@ const confirmTokenCreationWithTransactionId = async (
 
 app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
+    console.log({
+      token: {
+        org_uid: req.body.org_uid,
+        warehouse_project_id: req.body.warehouse_project_id,
+        vintage_year: req.body.vintage_year,
+        sequence_num: req.body.sequence_num,
+      },
+      payment: {
+        amount: (req.body.amount || 1) * 1000,
+        to_address: req.body.to_address,
+      },
+    });
     const response = await superagent
       .post(`${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`)
       .send({
@@ -615,10 +629,21 @@ app.use((req, res, next) => {
   next();
 });
 
-if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
-  app.listen(port, () => {
+const bindAddress = getConfig().BIND_ADDRESS || "localhost";
+
+if (
+  (bindAddress !== "localhost" && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) ||
+  bindAddress === "localhost"
+) {
+  app.listen(port, bindAddress, () => {
     console.log(`Application is running on port ${port}.`);
   });
+
+  if (CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
+    setTimeout(() => {
+      scheduler.start();
+    }, 5000);
+  }
 } else {
   console.log(
     "Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml"
