@@ -40,7 +40,7 @@ const getStoreIds = async (orgUid) => {
       .agent(baseOptions.agent)
       .key(baseOptions.key)
       .cert(baseOptions.cert)
-      .timeout(timeout);
+      .timeout(baseOptions.timeout);
 
     const data = response.body;
 
