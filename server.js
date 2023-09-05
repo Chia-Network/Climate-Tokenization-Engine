@@ -639,11 +639,11 @@ if (
     console.log(`Application is running on port ${port}.`);
   });
 
- // if (CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
+  if (CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
     setTimeout(() => {
       scheduler.start();
     }, 5000);
-  //}
+  }
 } else {
   console.log(
     "Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml"
