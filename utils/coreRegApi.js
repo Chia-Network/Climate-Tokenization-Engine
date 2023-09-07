@@ -14,50 +14,6 @@ const getAssetUnitBlocks = (marketplaceIdentifier) => {
   return request;
 };
 
-const splitRetiredUnit = async (
-  unit,
-  amount,
-  beneficiaryName,
-  beneficiaryPublicKey
-) => {
-  const splitData = {
-    warehouseUnitId: unit.warehouseUnitId,
-    records: [
-      {
-        unitCount: unit.unitCount - amount,
-        unitBlockStart: unit.unitBlockStart,
-        unitBlockEnd: unit.unitBlockEnd,
-        marketplace: unit.marketplace,
-        marketplaceIdentifier: unit.marketplaceIdentifier,
-        unitStatusReason: beneficiaryPublicKey || unit.unitStatusReason,
-        unitOwner: beneficiaryName || unit.unitOwner,
-      },
-      {
-        unitCount: amount,
-        unitBlockStart: unit.unitBlockStart,
-        unitBlockEnd: unit.unitBlockEnd,
-        marketplace: null,
-        marketplaceIdentifier: null,
-      },
-    ],
-  };
-
-  try {
-    const request = superagent
-      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/units/split`)
-      .send(splitData)
-      .set({ "Content-Type": "application/json" });
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    await request;
-  } catch (error) {
-    throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
-  }
-};
-
 const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
   unit.status = "retired";
   unit.unitOwner = beneficiaryName;
@@ -66,7 +22,7 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 };
 
 const updateUnit = async (unit) => {
-  try {
+ // try {
     const request = superagent
       .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
       .send(unit)
@@ -77,15 +33,16 @@ const updateUnit = async (unit) => {
     }
 
     await request;
-  } catch (error) {
-    throw new Error(`Warehouse unit could not be updated: ${error}`);
-  }
+//  } catch (error) {
+ //   throw new Error(`Warehouse unit could not be updated: ${error}`);
+ // }
 };
 
 const getLastProcessedHeight = async () => {
+  
   try {
     const homeOrgUid = await getHomeOrgUid();
-    
+
     const request = superagent
       .get(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
       .query({ orgUid: homeOrgUid });
@@ -110,6 +67,16 @@ const getLastProcessedHeight = async () => {
 
 const getHomeOrgUid = async () => {
   try {
+    const homeOrg = await getHomeOrg();
+    return homeOrg.orgUid;
+  } catch (error) {
+    console.error(`Could not get home organization UID: ${error}`);
+    return null;
+  }
+};
+
+const getHomeOrg = async () => {
+  try {
     const request = superagent.get(
       `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations`
     );
@@ -125,27 +92,26 @@ const getHomeOrgUid = async () => {
     }
 
     // Iterate through the response keys and find the object where "isHome" is true
-    let homeOrgUid = null;
+    let homeOrg = null;
     for (const key in response.body) {
       if (response.body[key].isHome === true) {
-        homeOrgUid = response.body[key].orgUid;
+        homeOrg = response.body[key];
         break;
       }
     }
 
-    if (!homeOrgUid) {
+    if (!homeOrg) {
       throw new Error(
         'No organization with "isHome" equal to true found in the response'
       );
     }
 
-    return homeOrgUid;
+    return homeOrg;
   } catch (error) {
     console.error(`Could not get home organization UID: ${error}`);
     return null;
   }
 };
-
 
 const setLastProcessedHeight = async (height) => {
   try {
@@ -169,9 +135,9 @@ const setLastProcessedHeight = async (height) => {
 
 module.exports = {
   getAssetUnitBlocks,
-  splitRetiredUnit,
   retireUnit,
   getLastProcessedHeight,
   setLastProcessedHeight,
   getHomeOrgUid,
+  getHomeOrg,
 };

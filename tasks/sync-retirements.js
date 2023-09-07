@@ -1,10 +1,12 @@
 const { SimpleIntervalJob, Task } = require("toad-scheduler");
+const Datalayer = require("chia-datalayer");
 const superagent = require("superagent");
 const { getConfig } = require("../utils/config-loader");
 const {
   getLastProcessedHeight,
   getAssetUnitBlocks,
   setLastProcessedHeight,
+  getHomeOrg,
 } = require("../utils/coreRegApi");
 const warehouseApi = require("../warehouse");
 const { waitForAllTransactionsToConfirm } = require("../wallet");
@@ -20,13 +22,13 @@ async function processResult({
 }) {
   try {
     await waitForAllTransactionsToConfirm();
-    // return the CADT unit records that all match this marketplaceIdentifier
+    await waitForCadtSync();
     const unitBlocks = await getAssetUnitBlocks(marketplaceIdentifier);
 
-    // sort from smallest to largest
+    // sort from largest to smallest
     const units = unitBlocks?.body
       .filter((unit) => unit.unitStatus !== "Retired")
-      .sort((a, b) => a.unitCount - b.unitCount);
+      .sort((a, b) => b.unitCount - a.unitCount);
 
     if (!units || units.length === 0) {
       console.log(
@@ -103,6 +105,39 @@ function findHighestHeight(activities) {
   return highestHeight;
 }
 
+async function waitForCadtSync() {
+  await new Promise((resolve) => setTimeout(() => resolve(), 5000));
+
+  const dataLayerConfig = {};
+  if (CONFIG.DATA_LAYER_HOST) {
+    dataLayerConfig.datalayer_host = CONFIG.DATA_LAYER_HOST;
+  }
+  if (CONFIG.WALLET_HOST) {
+    dataLayerConfig.wallet_host = CONFIG.WALLET_HOST;
+  }
+  if (CONFIG.CERTIFICATE_FOLDER_PATH) {
+    dataLayerConfig.certificate_folder_path = CONFIG.CERTIFICATE_FOLDER_PATH; 
+  }
+  
+  const datalayer = Datalayer.rpc(dataLayerConfig);
+  const homeOrg = await getHomeOrg();
+  
+  const onChainRoot = await datalayer.getRoot({
+    id: homeOrg.registryId,
+  });
+
+  if (!onChainRoot.confirmed) {
+    return waitForCadtSync();
+  }
+
+  console.log(onChainRoot.hash);
+  console.log(homeOrg.registryHash);
+
+  if (onChainRoot.hash !== homeOrg.registryHash) {
+    return waitForCadtSync();
+  }
+}
+
 async function getAndProcessActivities(minHeight = 0) {
   // Dont run if a previous task is still running
   if (isTaskInProgress) {
@@ -148,6 +183,7 @@ async function getAndProcessActivities(minHeight = 0) {
       if (retirements.length > 0) {
         for (const activity of retirements) {
           console.log("Processing retirement", activity);
+          await waitForCadtSync();
           await processResult({
             marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
             // the amount is mojos but each climate token is 1000 mojos
@@ -156,6 +192,7 @@ async function getAndProcessActivities(minHeight = 0) {
             beneficiaryName: activity.beneficiary_name,
             beneficiaryAddress: activity.beneficiary_address,
           });
+          await new Promise((resolve) => setTimeout(() => resolve(), 5000));
         }
 
         const blockHeightsProcessed = findHighestHeight(retirements);

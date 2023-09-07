@@ -13,45 +13,10 @@ const commitStagingData = async () => {
     }
 
     await request;
+    // Give it time to go into pending status before returning
+    await new Promise((resolve) => setTimeout(() => resolve(), 5000));
   } catch (error) {
     throw new Error(`Could not commit staging data on warehouse: ${error}`);
-  }
-};
-
-const deleteStagingData = async () => {
-  try {
-    const request = superagent.delete(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/clean`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    await request;
-  } catch (error) {
-    throw new Error(`Could not delete staging data on warehouse: ${error}`);
-  }
-};
-
-const getHasPendingTransactions = async () => {
-  try {
-    const request = superagent.get(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/staging/hasPendingTransactions`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    const data = response.body;
-    return Boolean(data?.confirmed);
-  } catch (error) {
-    throw new Error(
-      `Could not determine if there are pending transactions on warehouse: ${error}`
-    );
   }
 };
 
@@ -67,11 +32,55 @@ const cleanUnitBeforeUpdating = (unit) => {
   }, unitToBeUpdated);
 };
 
-const updateUnit = async (unitToBeUpdated) => {
+const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
+  const cleanedUnit = cleanUnitBeforeUpdating(unit);
+  if (beneficiaryName) {
+    cleanedUnit.unitOwner = beneficiaryName;
+  }
+
+  if (beneficiaryAddress) {
+    cleanedUnit.unitStatusReason = beneficiaryAddress;
+  }
+
+  cleanedUnit.unitStatus = "Retired";
+
+  console.log("retireing unit", cleanedUnit);
+  await updateUnit(cleanedUnit);
+};
+
+const insertUnit = async (unit) => {
+  console.log(
+    "inserting unit",
+    `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
+    unit
+  );
+  //try {
+  delete unit?.warehouseUnitId;
+  delete unit?.issuance?.orgUid;
+  delete unit.issuanceId;
+  delete unit.orgUid;
+  delete unit.serialNumberBlock;
+
+  const request = superagent
+    .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+    .send(unit)
+    .set("Content-Type", "application/json");
+
+  if (CONFIG.CADT_API_KEY) {
+    request.set("x-api-key", CONFIG.CADT_API_KEY);
+  }
+
+  await request;
+  // } catch (error) {
+  //   throw new Error(`Warehouse unit could not be updated: ${error}`);
+  // }
+};
+
+const deleteUnit = async (unit) => {
   try {
     const request = superagent
-      .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
-      .send(JSON.stringify(unitToBeUpdated))
+      .delete(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+      .send({ warehouseUnitId: unit.warehouseUnitId })
       .set("Content-Type", "application/json");
 
     if (CONFIG.CADT_API_KEY) {
@@ -84,27 +93,52 @@ const updateUnit = async (unitToBeUpdated) => {
   }
 };
 
-const detokenizeUnit = async (unit) => {
-  const unitToBeDetokenized = cleanUnitBeforeUpdating(unit);
-  unitToBeDetokenized.marketplace = null;
-  unitToBeDetokenized.marketplaceIdentifier = null;
-  await updateUnit(unitToBeDetokenized);
+const updateUnit = async (unitToBeUpdated) => {
+  console.log(
+    "updating unit",
+    `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
+    unitToBeUpdated
+  );
+  try {
+    delete unitToBeUpdated?.issuance?.orgUid;
+    delete unitToBeUpdated.issuanceId;
+    delete unitToBeUpdated.orgUid;
+    delete unitToBeUpdated.serialNumberBlock;
+
+    const request = superagent
+      .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+      .send(unitToBeUpdated)
+      .set("Content-Type", "application/json");
+
+    if (CONFIG.CADT_API_KEY) {
+      request.set("x-api-key", CONFIG.CADT_API_KEY);
+    }
+
+    await request;
+  } catch (error) {
+    throw new Error(`Warehouse unit could not be updated: ${error}`);
+  }
 };
 
-const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
-  const cleanedUnit = cleanUnitBeforeUpdating(unit);
-  if (beneficiaryName) {
-    cleanedUnit.unitOwner = beneficiaryName;
+const parseSerialNumber = (serialNumberBlock) => {
+  const serialNumberBlockPattern = /^([a-zA-Z0-9]+-)?(\d+)-(\d+)$/;
+  const matches = serialNumberBlock.match(serialNumberBlockPattern);
+
+  if (!matches) {
+    return undefined; // Return undefined for wrong format
   }
 
-  if (beneficiaryAddress) {
-    cleanedUnit.unitStatusReason = beneficiaryAddress;
+  let prefix = null;
+  let unitBlockStart;
+  let unitBlockEnd;
+
+  if (matches[1]) {
+    prefix = matches[1].slice(0, -1); // Remove the trailing hyphen
   }
+  unitBlockStart = matches[2];
+  unitBlockEnd = matches[3];
 
-  cleanedUnit.unitStatus = "retired";
-
-  console.log("retireing unit", cleanedUnit);
-  await updateUnit(cleanedUnit);
+  return { prefix, unitBlockStart, unitBlockEnd };
 };
 
 const splitUnit = async ({
@@ -121,48 +155,38 @@ const splitUnit = async ({
       beneficiaryAddress,
     })
   );
-  
-  // Check if serialNumberBlock is in the right format
-  const serialNumberBlockPattern = /^([a-zA-Z0-9]+)-(\d+)-(\d+)$/;
-  console.log(unit.serialNumberBlock);
-  if (!serialNumberBlockPattern.test(unit.serialNumberBlock)) {
-    throw new Error("serialNumberBlock is not in the correct format");
-  }
 
   // Parse the serialNumberBlock
-  const [prefix, unitBlockStart, unitBlockEnd] =
-    unit.serialNumberBlock.split("-");
+  const { unitBlockStart, unitBlockEnd } = parseSerialNumber(
+    unit.serialNumberBlock
+  );
+
+  if (!unitBlockStart && !unitBlockEnd) {
+    console.error("serialNumberBlock is not in the correct format");
+    return;
+  }
+
   const totalUnits = parseInt(unitBlockEnd) - parseInt(unitBlockStart) + 1;
 
   if (amount >= totalUnits) {
     throw new Error("Amount must be less than total units in the block");
   }
 
-  // Create new unit blocks based on the amount
-  const newUnitBlockEnd1 = parseInt(unitBlockStart) + amount - 1;
-  const newUnitBlockStart2 = newUnitBlockEnd1 + 1;
-
   const dataToBeSubmitted = {
     warehouseUnitId: unit.warehouseUnitId,
     records: [
       {
         unitCount: amount,
-        unitBlockStart: unitBlockStart,
-        unitBlockEnd: newUnitBlockEnd1.toString(),
         marketplace: unit.marketplace,
         marketplaceIdentifier: unit.marketplaceIdentifier,
-        serialNumberBlock: `${prefix}-${unitBlockStart}-${newUnitBlockEnd1}`,
         unitStatus: "Retired",
         unitOwner: beneficiaryName,
         unitStatusReason: beneficiaryAddress,
       },
       {
-        unitCount: totalUnits - amount - 1,
-        unitBlockStart: newUnitBlockStart2.toString(),
-        unitBlockEnd: unitBlockEnd,
+        unitCount: totalUnits - amount,
         marketplace: unit.marketplace,
         marketplaceIdentifier: unit.marketplaceIdentifier,
-        serialNumberBlock: `${prefix}-${newUnitBlockStart2}-${unitBlockEnd}`,
       },
     ],
   };
@@ -184,158 +208,12 @@ const splitUnit = async ({
   }
 };
 
-const splitDetokenizeUnit = async (unit, amount) => {
-  const dataToBeSubmitted = {
-    warehouseUnitId: unit.warehouseUnitId,
-    records: [
-      {
-        unitCount: unit.unitCount - amount,
-        unitBlockStart: unit.unitBlockStart,
-        unitBlockEnd: unit.unitBlockEnd,
-        marketplace: unit.marketplace,
-        marketplaceIdentifier: unit.marketplaceIdentifier,
-      },
-      {
-        unitCount: amount,
-        unitBlockStart: unit.unitBlockStart,
-        unitBlockEnd: unit.unitBlockEnd,
-        marketplace: null,
-        marketplaceIdentifier: null,
-      },
-    ],
-  };
-
-  console.log(
-    "splitting units",
-    `${CONFIG.CADT_API_SERVER_HOST}/v1/units/split`
-  );
-
-  try {
-    const request = superagent
-      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/units/split`)
-      .send(JSON.stringify(dataToBeSubmitted))
-      .set("Content-Type", "application/json");
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    await request;
-  } catch (error) {
-    throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
-  }
-};
-
-const getTokenizedUnitsByAssetId = async (assetId) => {
-  try {
-    const request = superagent.get(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/units?marketplaceIdentifiers=${assetId}`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    return response.body;
-  } catch (err) {
-    throw new Error(`Could not get tokenized unit by asset id. ${err}`);
-  }
-};
-
-const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
-  try {
-    const request = superagent.get(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/projects?projectIds=${warehouseProjectId}`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    const data = response.body;
-    return data[0];
-  } catch (error) {
-    throw new Error(`Could not get corresponding project data: ${error}`);
-  }
-};
-
-const getUnitByWarehouseUnitId = async (warehouseUnitId) => {
-  try {
-    const request = superagent.get(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/units?warehouseUnitId=${warehouseUnitId}`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    const data = response.body;
-    return data;
-  } catch (error) {
-    throw new Error(
-      `Could not get warehouse unit by warehouseUnitId: ${error}`
-    );
-  }
-};
-
-const registerToken = async (token) => {
-  try {
-    const request = superagent
-      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
-      .send(JSON.stringify({ [token.asset_id]: token }))
-      .set("Content-Type", "application/json");
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    const data = response.body;
-    return data;
-  } catch (error) {
-    throw new Error(`Could not register token on warehouse: ${error}`);
-  }
-};
-
-const getOrgMetaData = async (orgUid) => {
-  try {
-    const request = superagent.get(
-      `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata?orgUid=${orgUid}`
-    );
-
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    const response = await request;
-
-    const data = response.body;
-    return data;
-  } catch (error) {
-    throw new Error(`Could not get org meta data: ${error}`);
-  }
-};
-
 module.exports = {
   commitStagingData,
-  deleteStagingData,
   updateUnit,
-  getTokenizedUnitsByAssetId,
-  getProjectByWarehouseProjectId,
-  getUnitByWarehouseUnitId,
-  getOrgMetaData,
-  detokenizeUnit,
-  registerToken,
-  splitDetokenizeUnit,
   cleanUnitBeforeUpdating,
-  getHasPendingTransactions,
-  splitUnit,
+  insertUnit,
+  deleteUnit,
   retireUnit,
+  splitUnit,
 };
