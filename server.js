@@ -270,6 +270,10 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     delete unitToBeUpdated.issuanceId;
     delete unitToBeUpdated.orgUid;
     delete unitToBeUpdated.serialNumberBlock;
+    
+    delete unitToBeUpdated.unitCount;
+    delete unitToBeUpdated.unitBlockStart;
+    delete unitToBeUpdated.unitBlockEnd;
 
     Object.keys(unitToBeUpdated).forEach(function (key, index) {
       if (this[key] == null) delete this[key];
