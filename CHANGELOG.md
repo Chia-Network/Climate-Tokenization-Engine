@@ -1,3 +1,17 @@
+## [1.3.4](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.2...1.3.4) (2023-09-08)
+
+
+### Bug Fixes
+
+* remove forbidden fields from tokenizing ([6f89e0c](https://github.com/Chia-Network/climate-tokenization-engine/commit/6f89e0ce3cc02c675b86b65a680604b322e8c1be))
+
+
+### Features
+
+* delete detokenization tail if core registry ([96e92ed](https://github.com/Chia-Network/climate-tokenization-engine/commit/96e92ed4fc2f3bdc8137069b9f1c52cef05219f6))
+
+
+
 ## [1.3.2](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.1...1.3.2) (2023-09-07)
 
 
