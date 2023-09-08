@@ -1,6 +1,9 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = 31313;
+
+app.use(cors());
 
 app.get("/v1/activities", (req, res) => {
   if (req.query.page == 1) {
