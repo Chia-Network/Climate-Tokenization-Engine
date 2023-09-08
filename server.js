@@ -270,6 +270,10 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     delete unitToBeUpdated.issuanceId;
     delete unitToBeUpdated.orgUid;
     delete unitToBeUpdated.serialNumberBlock;
+    
+    delete unitToBeUpdated.unitCount;
+    delete unitToBeUpdated.unitBlockStart;
+    delete unitToBeUpdated.unitBlockEnd;
 
     Object.keys(unitToBeUpdated).forEach(function (key, index) {
       if (this[key] == null) delete this[key];
@@ -339,6 +343,10 @@ const registerTokenCreationOnClimateWarehouse = async (
   warehouseUnitId
 ) => {
   try {
+    if (CONFIG.CORE_REGISTRY_MODE) {
+      delete token.detokenization;
+    }
+
     const response = await superagent
       .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
       .send({ [token.asset_id]: JSON.stringify(token) })
@@ -352,7 +360,7 @@ const registerTokenCreationOnClimateWarehouse = async (
     ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
-      if (isTokenRegistered && CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
+      if (isTokenRegistered && CONFIG.CORE_REGISTRY_MODE) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
@@ -659,7 +667,7 @@ if (
     console.log(`Application is running on port ${port}.`);
   });
 
-  if (CONFIG.UPDATE_CLIMATE_WAREHOUSE) {
+  if (CONFIG.CORE_REGISTRY_MODE) {
     setTimeout(() => {
       scheduler.start();
     }, 5000);
