@@ -1,6 +1,6 @@
 {
   "name": "climate-tokenization-engine",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "bin": "./server.js",
   "description": "",
   "main": "proxy.js",
@@ -29,7 +29,7 @@
   "homepage": "https://github.com/Chia-Network/climate-tokenization-engine#readme",
   "dependencies": {
     "body-parser": "^1.20.2",
-    "chia-datalayer": "^1.0.0",
+    "chia-datalayer": "^2.0.0",
     "chia-root-resolver": "^1.0.0",
     "express": "^4.18.2",
     "express-form-data": "^2.0.22",

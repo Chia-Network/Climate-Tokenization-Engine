@@ -18,7 +18,7 @@ const validator = joiExpress.createValidator({ passError: true });
 
 const { updateConfig, getConfig } = require("./utils/config-loader");
 const { connectToOrgSchema, tokenizeUnitSchema } = require("./validations.js");
-const { getStoreIds } = require("./datalayer.js");
+const { getStoreIds } = require("./chia/datalayer.js");
 const { logger } = require("./utils/logger");
 
 const app = express();
@@ -344,7 +344,11 @@ const registerTokenCreationOnClimateWarehouse = async (
 ) => {
   try {
     if (CONFIG.CORE_REGISTRY_MODE) {
-      delete token.detokenization;
+      token.detokenization = {
+        mod_hash: '',
+        public_key: '',
+        signature: ''
+      };
     }
 
     const response = await superagent

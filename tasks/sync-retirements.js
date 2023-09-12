@@ -9,7 +9,7 @@ const {
   getHomeOrg,
 } = require("../utils/coreRegApi");
 const warehouseApi = require("../warehouse");
-const { waitForAllTransactionsToConfirm } = require("../wallet");
+const { waitForAllTransactionsToConfirm } = require("../chia/wallet");
 let CONFIG = getConfig();
 
 let isTaskInProgress = false;
@@ -46,6 +46,7 @@ async function processResult({
       }
 
       await waitForAllTransactionsToConfirm();
+      await waitForCadtSync();
 
       const unit = units[i];
       const { unitCount } = unit;
@@ -68,6 +69,8 @@ async function processResult({
         });
         remainingAmountToRetire = 0;
       }
+      await waitForAllTransactionsToConfirm();
+      await waitForCadtSync();
     }
 
     // if there is a remaining amount to retire, then we have are attempting to retire more than we have
@@ -80,6 +83,7 @@ async function processResult({
     }
 
     await waitForAllTransactionsToConfirm();
+    await waitForCadtSync();
     // Everything went well, commit the staging data to the datalayer
     await warehouseApi.commitStagingData();
     await new Promise((resolve) => setTimeout(() => resolve(), 5000));
@@ -116,24 +120,43 @@ async function waitForCadtSync() {
     dataLayerConfig.wallet_host = CONFIG.WALLET_HOST;
   }
   if (CONFIG.CERTIFICATE_FOLDER_PATH) {
-    dataLayerConfig.certificate_folder_path = CONFIG.CERTIFICATE_FOLDER_PATH; 
+    dataLayerConfig.certificate_folder_path = CONFIG.CERTIFICATE_FOLDER_PATH;
   }
-  
-  const datalayer = Datalayer.rpc(dataLayerConfig);
+
+  const datalayer = new Datalayer(dataLayerConfig);
   const homeOrg = await getHomeOrg();
-  
-  const onChainRoot = await datalayer.getRoot({
+
+  const onChainRegistryRoot = await datalayer.getRoot({
     id: homeOrg.registryId,
   });
 
-  if (!onChainRoot.confirmed) {
+  if (!onChainRegistryRoot.confirmed) {
+    console.log('Waiting for Registry root to confirm');
     return waitForCadtSync();
   }
 
-  console.log(onChainRoot.hash);
-  console.log(homeOrg.registryHash);
+  if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
+    console.log('Waiting for CADT to sync with latest regisry root.', {
+      onChainRoot: onChainRegistryRoot.hash,
+      homeOrgRegistryRoot: homeOrg.registryHash,
+    });
+    return waitForCadtSync();
+  }
 
-  if (onChainRoot.hash !== homeOrg.registryHash) {
+  const onChainOrgRoot = await datalayer.getRoot({
+    id: homeOrg.orgUid,
+  });
+
+  if (!onChainOrgRoot.confirmed) {
+    console.log("Waiting for Organization root to confirm");
+    return waitForCadtSync();
+  }
+
+  if (onChainOrgRoot.hash !== homeOrg.orgHash) {
+    console.log("Waiting for CADT to sync with latest organization root.", {
+      onChainRoot: onChainOrgRoot.hash,
+      homeOrgRoot: homeOrg.orgHash,
+    });
     return waitForCadtSync();
   }
 }
@@ -198,6 +221,7 @@ async function getAndProcessActivities(minHeight = 0) {
         const blockHeightsProcessed = findHighestHeight(retirements);
 
         await waitForAllTransactionsToConfirm();
+        await waitForCadtSync();
         await setLastProcessedHeight(blockHeightsProcessed);
 
         page += 1;
