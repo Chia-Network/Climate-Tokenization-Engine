@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
-const { getConfig, getChiaRoot } = require("./utils/config-loader");
+const { getConfig, getChiaRoot } = require("../utils/config-loader");
 const CONFIG = getConfig();
 
 const getBaseOptions = () => {

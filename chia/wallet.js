@@ -1,7 +1,7 @@
 const superagent = require("superagent");
 const https = require("https");
-const { getBaseOptions } = require("./utils/api-utils");
-const { getConfig } = require("./utils/config-loader");
+const { getBaseOptions } = require("../utils/api-utils");
+const { getConfig } = require("../utils/config-loader");
 let CONFIG = getConfig();
 
 const walletIsSynced = async () => {
