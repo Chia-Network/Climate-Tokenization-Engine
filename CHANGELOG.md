@@ -1,3 +1,12 @@
+## [1.3.5](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.4...1.3.5) (2023-09-12)
+
+
+### Bug Fixes
+
+* various fixes to autoretirement ([77dbfd6](https://github.com/Chia-Network/climate-tokenization-engine/commit/77dbfd66d28d3cf80844d26b96c627dc1f74764c))
+
+
+
 ## [1.3.4](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.2...1.3.4) (2023-09-08)
 
 
