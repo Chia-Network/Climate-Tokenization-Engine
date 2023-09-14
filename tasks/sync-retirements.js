@@ -51,7 +51,7 @@ async function processResult({
       const unit = units[i];
       const { unitCount } = unit;
 
-      console.log(unitCount, remainingAmountToRetire);
+      console.log({unitCount, remainingAmountToRetire});
 
       if (unitCount <= remainingAmountToRetire) {
         await warehouseApi.retireUnit(
@@ -131,12 +131,12 @@ async function waitForCadtSync() {
   });
 
   if (!onChainRegistryRoot.confirmed) {
-    console.log('Waiting for Registry root to confirm');
+    console.log("Waiting for Registry root to confirm");
     return waitForCadtSync();
   }
 
   if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-    console.log('Waiting for CADT to sync with latest regisry root.', {
+    console.log("Waiting for CADT to sync with latest regisry root.", {
       onChainRoot: onChainRegistryRoot.hash,
       homeOrgRegistryRoot: homeOrg.registryHash,
     });
@@ -175,7 +175,12 @@ async function getAndProcessActivities(minHeight = 0) {
     const resultsLimit = 10;
 
     while (true) {
-      console.log(`${CONFIG.CLIMATE_EXPLORER_HOST}/v1/activities`);
+      console.log(`${CONFIG.CLIMATE_EXPLORER_HOST}/v1/activities`, {
+        page: page,
+        limit: resultsLimit,
+        minHeight: Number(minHeight) + 1,
+        sort: "asc",
+      });
       const response = await superagent
         .get(`${CONFIG.CLIMATE_EXPLORER_HOST}/v1/activities`)
         .query({
@@ -191,6 +196,8 @@ async function getAndProcessActivities(minHeight = 0) {
 
       // Assuming your API returns a JSON response
       const results = response.body;
+
+      console.log(`Retrieved ${results?.activities?.length || 0} records`);
 
       // We only want to process the retirement activities
       // Also filter by height so we don't process the same activity twice
@@ -226,7 +233,11 @@ async function getAndProcessActivities(minHeight = 0) {
 
         page += 1;
       } else {
-        break;
+        if (results?.activities?.length > 0) {
+          page += 1;
+        } else {
+          break;
+        }
       }
     }
   } catch (error) {

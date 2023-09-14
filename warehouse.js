@@ -30,6 +30,8 @@ const cleanUnitBeforeUpdating = (unit) => {
   Object.keys(unitToBeUpdated).forEach(function (key, index) {
     if (this[key] == null) delete this[key];
   }, unitToBeUpdated);
+
+  return unitToBeUpdated;
 };
 
 const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
@@ -44,7 +46,7 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 
   cleanedUnit.unitStatus = "Retired";
 
-  console.log("retireing unit", cleanedUnit);
+  console.log("Retiring Unit", cleanedUnit.warehouseUnitId);
   await updateUnit(cleanedUnit);
 };
 
@@ -97,27 +99,28 @@ const updateUnit = async (unitToBeUpdated) => {
   console.log(
     "updating unit",
     `${CONFIG.CADT_API_SERVER_HOST}/v1/units`,
-    unitToBeUpdated
+    unitToBeUpdated.warehouseUnitId
   );
-  try {
-    delete unitToBeUpdated?.issuance?.orgUid;
-    delete unitToBeUpdated.issuanceId;
-    delete unitToBeUpdated.orgUid;
-    delete unitToBeUpdated.serialNumberBlock;
+  // try {
+  delete unitToBeUpdated?.issuance?.orgUid;
+  delete unitToBeUpdated.issuanceId;
+  delete unitToBeUpdated.orgUid;
+  delete unitToBeUpdated.serialNumberBlock;
+  delete unitToBeUpdated?.timeStaged;
 
-    const request = superagent
-      .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
-      .send(unitToBeUpdated)
-      .set("Content-Type", "application/json");
+  const request = superagent
+    .put(`${CONFIG.CADT_API_SERVER_HOST}/v1/units`)
+    .send(unitToBeUpdated)
+    .set("Content-Type", "application/json");
 
-    if (CONFIG.CADT_API_KEY) {
-      request.set("x-api-key", CONFIG.CADT_API_KEY);
-    }
-
-    await request;
-  } catch (error) {
-    throw new Error(`Warehouse unit could not be updated: ${error}`);
+  if (CONFIG.CADT_API_KEY) {
+    request.set("x-api-key", CONFIG.CADT_API_KEY);
   }
+
+  await request;
+  // } catch (error) {
+  // throw new Error(`Warehouse unit could not be updated: ${error}`);
+  // }
 };
 
 const parseSerialNumber = (serialNumberBlock) => {
