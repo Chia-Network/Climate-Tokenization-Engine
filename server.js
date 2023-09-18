@@ -22,12 +22,12 @@ const { getStoreIds } = require("./chia/datalayer.js");
 const { logger } = require("./utils/logger");
 
 const app = express();
-const port = 31311;
 let CONFIG = getConfig();
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
 });
+
 app.use(
   cors({
     exposedHeaders: Object.values(headerKeys).join(","),
@@ -270,7 +270,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     delete unitToBeUpdated.issuanceId;
     delete unitToBeUpdated.orgUid;
     delete unitToBeUpdated.serialNumberBlock;
-    
+
     delete unitToBeUpdated.unitCount;
     delete unitToBeUpdated.unitBlockStart;
     delete unitToBeUpdated.unitBlockEnd;
@@ -345,9 +345,9 @@ const registerTokenCreationOnClimateWarehouse = async (
   try {
     if (CONFIG.CORE_REGISTRY_MODE) {
       token.detokenization = {
-        mod_hash: '',
-        public_key: '',
-        signature: ''
+        mod_hash: "",
+        public_key: "",
+        signature: "",
       };
     }
 
@@ -667,8 +667,12 @@ if (
   (bindAddress !== "localhost" && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) ||
   bindAddress === "localhost"
 ) {
-  app.listen(port, bindAddress, () => {
-    console.log(`Application is running on port ${port}.`);
+  app.listen(CONFIG.CLIMATE_TOKENIZATION_ENGINE_PORT || 31311, bindAddress, () => {
+    console.log(
+      `Application is running on port ${
+        CONFIG.CLIMATE_TOKENIZATION_ENGINE_PORT || 31311
+      }.`
+    );
   });
 
   if (CONFIG.CORE_REGISTRY_MODE) {
