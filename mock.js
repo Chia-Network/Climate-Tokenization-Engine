@@ -9,10 +9,12 @@ app.get("/v1/activities", (req, res) => {
   if (req.query.page == 1) {
     if (req.query.minHeight > 6000010) {
       res.json({
+        total: 0,
         activities: [],
       });
     }
     res.json({
+      total: 50,
       activities: [
         {
           height: 6000000,
@@ -40,6 +42,7 @@ app.get("/v1/activities", (req, res) => {
     });
   } else {
     res.json({
+      total: 0,
       activities: [],
     });
   }

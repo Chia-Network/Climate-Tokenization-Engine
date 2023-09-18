@@ -256,7 +256,7 @@ const task = new Task("sync-retirements", async () => {
 
 const job = new SimpleIntervalJob(
   {
-    seconds: 3600,
+    seconds: 300,
     runImmediately: true,
   },
   task,
