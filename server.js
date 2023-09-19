@@ -9,6 +9,7 @@ const cors = require("cors");
 const os = require("os");
 const formData = require("express-form-data");
 const scheduler = require("./tasks");
+const { assertNoPendingTransactions } = require("./middleware");
 
 const { getHomeOrgUid } = require("./utils/coreRegApi");
 
@@ -416,7 +417,7 @@ const confirmTokenCreationWithTransactionId = async (
   return false;
 };
 
-app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
+app.post("/tokenize", validator.body(tokenizeUnitSchema), assertNoPendingTransactions(), async (req, res) => {
   try {
     console.log({
       token: {
@@ -430,6 +431,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
         to_address: req.body.to_address,
       },
     });
+
     const response = await superagent
       .post(`${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`)
       .send({
@@ -661,7 +663,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-const bindAddress = getConfig().BIND_ADDRESS || "localhost";
+const bindAddress = CONFIG.BIND_ADDRESS || "localhost";
 
 if (
   (bindAddress !== "localhost" && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) ||

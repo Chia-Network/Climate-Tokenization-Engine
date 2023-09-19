@@ -3,15 +3,7 @@ const yaml = require("js-yaml");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-
-const getChiaRoot = () => {
-  if (process.env.CHIA_ROOT) {
-    return path.resolve(process.env.CHIA_ROOT);
-  } else {
-    const homeDir = os.homedir();
-    return path.resolve(`${homeDir}/.chia/mainnet`);
-  }
-}
+const { getChiaRoot } = require("chia-root-resolver");
 
 const defaultConfig = require("./defaultConfig.json");
 const chiaRoot = getChiaRoot();
