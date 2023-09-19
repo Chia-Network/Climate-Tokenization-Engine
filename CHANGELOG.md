@@ -1,3 +1,17 @@
+## [1.3.7](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.6...1.3.7) (2023-09-19)
+
+
+### Bug Fixes
+
+* 5 mins for autoretire ([7f8f797](https://github.com/Chia-Network/climate-tokenization-engine/commit/7f8f7970a50653b840b11459376d8d3e94f78d17))
+
+
+### Features
+
+* make app port configurable ([5db1132](https://github.com/Chia-Network/climate-tokenization-engine/commit/5db1132bac88dc683dadc0f1c2ed96e89d7b8153))
+
+
+
 ## [1.3.6](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.5...1.3.6) (2023-09-14)
 
 
