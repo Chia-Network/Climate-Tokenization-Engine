@@ -1,3 +1,12 @@
+## [1.3.9](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.8...1.3.9) (2023-09-20)
+
+
+### Bug Fixes
+
+* revert pending transactions check ([46b9a06](https://github.com/Chia-Network/climate-tokenization-engine/commit/46b9a0677eeb78c752f132fb41ae4e95c6a0479d))
+
+
+
 ## [1.3.8](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.7...1.3.8) (2023-09-20)
 
 
