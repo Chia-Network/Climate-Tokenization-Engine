@@ -1,3 +1,12 @@
+## [1.3.10](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.9...1.3.10) (2023-09-20)
+
+
+### Bug Fixes
+
+* dnt crash if homeorg does not exist ([8f2d02e](https://github.com/Chia-Network/climate-tokenization-engine/commit/8f2d02ef3e50753ef97aa2ebaad3fa8a9518df5e))
+
+
+
 ## [1.3.9](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.8...1.3.9) (2023-09-20)
 
 
