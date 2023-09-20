@@ -1,3 +1,12 @@
+## [1.3.8](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.7...1.3.8) (2023-09-20)
+
+
+### Features
+
+* assert no pending transactions when tokenizing ([3aeea03](https://github.com/Chia-Network/climate-tokenization-engine/commit/3aeea034abcb3ae6d54caab75e21d4127d64e728))
+
+
+
 ## [1.3.7](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.6...1.3.7) (2023-09-19)
 
 
