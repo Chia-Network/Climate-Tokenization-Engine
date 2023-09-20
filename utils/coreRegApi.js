@@ -68,7 +68,11 @@ const getLastProcessedHeight = async () => {
 const getHomeOrgUid = async () => {
   try {
     const homeOrg = await getHomeOrg();
-    return homeOrg.orgUid;
+    if (homeOrg) {
+      return homeOrg.orgUid;
+    }
+
+    return null;
   } catch (error) {
     console.error(`Could not get home organization UID: ${error}`);
     return null;
@@ -101,9 +105,10 @@ const getHomeOrg = async () => {
     }
 
     if (!homeOrg) {
-      throw new Error(
+      console.error(
         'No organization with "isHome" equal to true found in the response'
       );
+      return null;
     }
 
     return homeOrg;
