@@ -9,7 +9,6 @@ const cors = require("cors");
 const os = require("os");
 const formData = require("express-form-data");
 const scheduler = require("./tasks");
-const { assertNoPendingTransactions } = require("./middleware");
 
 const { getHomeOrgUid } = require("./utils/coreRegApi");
 
@@ -417,7 +416,7 @@ const confirmTokenCreationWithTransactionId = async (
   return false;
 };
 
-app.post("/tokenize", validator.body(tokenizeUnitSchema), assertNoPendingTransactions(), async (req, res) => {
+app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
     console.log({
       token: {
