@@ -1,6 +1,6 @@
 const { hasUnconfirmedTransactions } = require("./chia/wallet");
 
-export const assertNoPendingTransactions = async (req, res, next) => {
+const assertNoPendingTransactions = async (req, res, next) => {
   const hasPendingTransactions = await hasUnconfirmedTransactions();
 
   if (hasPendingTransactions) {
@@ -12,3 +12,5 @@ export const assertNoPendingTransactions = async (req, res, next) => {
 
   next();
 };
+
+module.exports = { assertNoPendingTransactions };
