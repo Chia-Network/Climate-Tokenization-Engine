@@ -248,6 +248,13 @@ async function getAndProcessActivities(minHeight = 0) {
 }
 
 const task = new Task("sync-retirements", async () => {
+  const homeOrg = await getHomeOrg();
+
+  if (!homeOrg) {
+    console.log("No home org found, skipping sync-retirements task");
+    return;
+  }
+  
   console.log("Running sync-retirements task");
   const lastProcessedHeight = await getLastProcessedHeight();
   console.log(`Last processed height: ${lastProcessedHeight}`);
