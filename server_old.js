@@ -9,6 +9,7 @@ const cors = require("cors");
 const os = require("os");
 const formData = require("express-form-data");
 const scheduler = require("./tasks");
+const { hasUnconfirmedTransactions } = require("./chia/wallet");
 
 const { getHomeOrgUid } = require("./utils/coreRegApi");
 
@@ -23,6 +24,14 @@ const { logger } = require("./utils/logger");
 
 const app = express();
 let CONFIG = getConfig();
+
+const {
+  CLIMATE_TOKENIZATION_ENGINE_API_KEY,
+  CLIMATE_TOKENIZATION_ENGINE_PORT,
+  CORE_REGISTRY_MODE,
+  BIND_ADDRESS,
+} = CONFIG;
+const port = CLIMATE_TOKENIZATION_ENGINE_PORT || 31311;
 
 const headerKeys = Object.freeze({
   ORG_UID: "x-org-uid",
@@ -79,29 +88,6 @@ app.use(function (req, res, next) {
     }
   } else {
     next();
-  }
-});
-
-app.post("/connect", validator.body(connectToOrgSchema), async (req, res) => {
-  const orgUid = req.body.orgUid;
-  try {
-    const storeIds = await getStoreIds(orgUid);
-
-    if (storeIds.includes(orgUid)) {
-      updateConfig({ HOME_ORG: orgUid });
-      setTimeout(() => {
-        CONFIG = getConfig();
-      }, 0);
-      res.json({ message: "successfully connected" });
-    } else {
-      throw new Error("orgUid not found");
-    }
-  } catch (error) {
-    res.status(400).json({
-      message: "Error connecting orgUid",
-      error: error.message,
-    });
-    logger.error(`Error connecting orgUid ${error.message}`);
   }
 });
 
@@ -292,10 +278,6 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/staging/commit`)
       .set(headers);
   } catch (error) {
-    console.log(
-      "Could not update unit marketplace identifier with asset id.",
-      error
-    );
     logger.error(
       `Could not update unit marketplace identifier with asset id: ${error.message}`
     );
@@ -418,7 +400,16 @@ const confirmTokenCreationWithTransactionId = async (
 
 app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
   try {
-    console.log({
+    const hasPendingTransactions = await hasUnconfirmedTransactions();
+
+    if (hasPendingTransactions) {
+      return res.status(400).send({
+        success: false,
+        message: "Please wait for all transactions to confirm.",
+      });
+    }
+
+    logger.info({
       token: {
         org_uid: req.body.org_uid,
         warehouse_project_id: req.body.warehouse_project_id,
@@ -464,7 +455,7 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), async (req, res) => {
           req.body.warehouseUnitId
         );
       } else {
-        console.log("Token creation could not be confirmed.");
+        logger.info("Token creation could not be confirmed.");
       }
     } else {
       throw new Error(data.error);
@@ -662,24 +653,17 @@ app.use(async (req, res, next) => {
   next();
 });
 
-const bindAddress = CONFIG.BIND_ADDRESS || "localhost";
+const shouldListen =
+  BIND_ADDRESS === "localhost" ||
+  (BIND_ADDRESS !== "localhost" && CLIMATE_TOKENIZATION_ENGINE_API_KEY);
 
-if (
-  (bindAddress !== "localhost" && CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) ||
-  bindAddress === "localhost"
-) {
-  app.listen(CONFIG.CLIMATE_TOKENIZATION_ENGINE_PORT || 31311, bindAddress, () => {
-    console.log(
-      `Application is running on port ${
-        CONFIG.CLIMATE_TOKENIZATION_ENGINE_PORT || 31311
-      }.`
-    );
-  });
+if (shouldListen) {
+  app.listen(port, BIND_ADDRESS, () =>
+    logger.info(`Application is running on port ${port}.`)
+  );
 
-  if (CONFIG.CORE_REGISTRY_MODE) {
-    setTimeout(() => {
-      scheduler.start();
-    }, 5000);
+  if (CORE_REGISTRY_MODE) {
+    setTimeout(() => scheduler.start(), 5000);
   }
 } else {
   console.log(
