@@ -28,7 +28,7 @@ const findHighestHeight = (activities) => {
   });
 
   return highestHeight;
-}
+};
 
 /**
  * Process individual units for retirement
@@ -119,11 +119,7 @@ const getAndProcessActivities = async (minHeight = 0) => {
     let page = 1;
     const limit = 10;
     while (true) {
-      const retirements = await getRetirementActivities(
-        page,
-        limit,
-        minHeight
-      );
+      const retirements = await getRetirementActivities(page, limit, minHeight);
 
       if (!retirements.length) {
         break;
@@ -155,9 +151,18 @@ const task = new Task("sync-retirements", async () => {
   try {
     const homeOrg = await getHomeOrg();
     if (!homeOrg) {
+      logger.warn("Can not attain home orgination from the registry, skipping sync-retirements task");
       return;
     }
     const lastProcessedHeight = await getLastProcessedHeight();
+
+    if (lastProcessedHeight == null) {
+      logger.warn(
+        "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
+      );
+      return;
+    }
+
     await getAndProcessActivities(lastProcessedHeight);
   } catch (error) {
     logger.error(`Error in sync-retirements task: ${error.message}`);

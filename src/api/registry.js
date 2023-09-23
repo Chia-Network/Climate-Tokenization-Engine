@@ -116,19 +116,19 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 
 /**
  * Get last processed block height.
- * @returns {Promise<number>}
+ * @returns {Promise<number | null>}
  */
 const getLastProcessedHeight = async () => {
   const homeOrgUid = await getHomeOrgUid();
-  const request = superagent
+  const response = await superagent
     .get(`${retirementExplorerUri}/v1/organizations/metadata`)
     .query({ orgUid: homeOrgUid });
-  setApiKeyHeader(request);
-  const response = await request;
-  if (response.status !== 200) {
-    throw new Error(`Received non-200 status code: ${response.status}`);
-  }
-  return Number(response.body["meta_lastRetiredBlockHeight"] || 0);
+    
+  setApiKeyHeader(response);
+
+  return response.status === 200
+    ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
+    : null;
 };
 
 /**
@@ -333,7 +333,7 @@ const splitUnit = async ({
 
 const deleteStagingData = async () => {
   console.log("Not implemented");
-}
+};
 
 module.exports = {
   commitStagingData,
