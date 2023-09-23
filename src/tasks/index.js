@@ -1,5 +1,5 @@
 const { ToadScheduler } = require("toad-scheduler");
-const syncRetirements = require("./sync-retirements");
+const { job: syncRetirements } = require("./sync-retirements");
 
 /**
  * ToadScheduler instance

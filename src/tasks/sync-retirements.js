@@ -2,7 +2,7 @@ const { SimpleIntervalJob, Task } = require("toad-scheduler");
 const { logger } = require("../logger");
 const { waitForAllTransactionsToConfirm } = require("../chia/wallet");
 const { getRetirementActivities } = require("../api/retirement-explorer");
-
+const CONFIG = require("../config");
 const {
   commitStagingData,
   deleteStagingData,
@@ -16,6 +16,11 @@ const {
 
 let isTaskInProgress = false;
 
+/**
+ * Helper function to find the highest height among retirement activities.
+ * @param {Array<Object>} activities - Array of retirement activities.
+ * @returns {number} The highest block height.
+ */
 const findHighestHeight = (activities) => {
   let highestHeight = 0;
 
@@ -31,11 +36,11 @@ const findHighestHeight = (activities) => {
 };
 
 /**
- * Process individual units for retirement
- * @param {Array<Object>} units - Array of unit blocks to be processed
- * @param {number} amount - Amount to retire
- * @param {string} beneficiaryName - Beneficiary's name
- * @param {string} beneficiaryAddress - Beneficiary's address
+ * Process individual units for retirement.
+ * @param {Array<Object>} units - Array of unit blocks to be processed.
+ * @param {number} amount - Amount to retire.
+ * @param {string} beneficiaryName - Beneficiary's name.
+ * @param {string} beneficiaryAddress - Beneficiary's address.
  * @returns {Promise<void>}
  */
 const processUnits = async (
@@ -67,12 +72,12 @@ const processUnits = async (
 };
 
 /**
- * Main function to process retirement result
- * @param {Object} params - Parameters
- * @param {string} params.marketplaceIdentifier - Marketplace Identifier
- * @param {number} params.amount - Amount to retire
- * @param {string} params.beneficiaryName - Beneficiary's name
- * @param {string} params.beneficiaryAddress - Beneficiary's address
+ * Process retirement result.
+ * @param {Object} params - Parameters.
+ * @param {string} params.marketplaceIdentifier - Marketplace Identifier.
+ * @param {number} params.amount - Amount to retire.
+ * @param {string} params.beneficiaryName - Beneficiary's name.
+ * @param {string} params.beneficiaryAddress - Beneficiary's address.
  * @returns {Promise<void>}
  */
 const processResult = async ({
@@ -104,8 +109,8 @@ const processResult = async ({
 };
 
 /**
- * Function to get and process activities from API
- * @param {number} minHeight - Minimum block height to start
+ * Get and process retirement activities from the API.
+ * @param {number} minHeight - Minimum block height to start.
  * @returns {Promise<void>}
  */
 const getAndProcessActivities = async (minHeight = 0) => {
@@ -138,9 +143,10 @@ const getAndProcessActivities = async (minHeight = 0) => {
 };
 
 /**
- * Scheduler task definition
+ * Starts the sync-retirements task, which retrieves and processes retirement activities.
+ * @returns {Promise<void>}
  */
-const task = new Task("sync-retirements", async () => {
+const startSyncRetirementsTask = async () => {
   logger.task("Starting sync-retirements task");
   try {
     const homeOrg = await getHomeOrg();
@@ -166,15 +172,30 @@ const task = new Task("sync-retirements", async () => {
   } catch (error) {
     logger.task_error(`Error in sync-retirements task: ${error.message}`);
   }
+};
+
+/**
+ * Scheduler task definition.
+ */
+const task = new Task("sync-retirements", async () => {
+  startSyncRetirementsTask();
 });
 
 /**
- * Job configuration and initiation
+ * Job configuration and initiation.
  */
 const job = new SimpleIntervalJob(
-  { seconds: 300, runImmediately: true },
+  {
+    seconds:
+      CONFIG.TOKENIZATION_ENGINE.TASKS
+        .SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS,
+    runImmediately: true,
+  },
   task,
   "sync-retirements"
 );
 
-module.exports = job;
+module.exports = {
+  startSyncRetirementsTask,
+  job,
+};
