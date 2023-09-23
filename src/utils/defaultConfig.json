@@ -1,18 +1,36 @@
 {
-  "TOKENIZATION_ENGINE": {
-    "DATA_LAYER_HOST": "https://localhost:8562",
-    "WALLET_HOST": "https://localhost:9256",
-    "CLIMATE_TOKENIZATION_ENGINE_API_KEY": null,
-    "CADT_API_SERVER_HOST": "http://localhost:31310",
-    "CADT_API_KEY": null,
+  "GENERAL": {
     "CORE_REGISTRY_MODE": false,
-    "CLIMATE_TOKENIZATION_CHIA_HOST": "http://127.0.0.1:31312",
-    "CLIMATE_EXPLORER_HOST": "http://127.0.0.1:31313",
-    "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not",
     "LOG_LEVEL": "info",
-    "LOG_RETENTION_DAYS": "30",
-    "BIND_ADDRESS": "localhost",
-    "CERTIFICATE_FOLDER_PATH": null,
-    "CLIMATE_TOKENIZATION_ENGINE_PORT": 31311
+    "LOG_RETENTION_DAYS": "30"
+  },
+  "CHIA": {
+    "WALLET_HOST": "https://localhost:9256",
+    "CERTIFICATE_FOLDER_PATH": null
+  },
+  "REGISTRY": {
+    "PROTOCOL": "http",
+    "HOST": "127.0.0.1",
+    "PORT": 31310,
+    "API_KEY": null
+  },
+  "RETIREMENT_EXPLORER": {
+    "PROTOCOL": "http",
+    "HOST": "127.0.0.1",
+    "PORT": 31313,
+    "API_KEY": null
+  },
+  "TOKEN_DRIVER": {
+    "PROTOCOL": "http",
+    "HOST": "127.0.0.1",
+    "PORT": 31312,
+    "API_KEY": null
+  },
+  "TOKENIZATION_ENGINE": {
+    "PROTOCOL": "http",
+    "HOST": "127.0.0.1",
+    "API_KEY": null,
+    "PORT": 31311,
+    "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not"
   }
 }

@@ -2,6 +2,14 @@ const superagent = require("superagent");
 const { logger } = require("../logger");
 const CONFIG = require('../config');
 
+const { generateUriForHostAndPort } = require("../utils");
+
+const retirementExplorerUri = generateUriForHostAndPort(
+  CONFIG.RETIREMENT_EXPLORER.PROTOCOL,
+  CONFIG.RETIREMENT_EXPLORER.HOST,
+  CONFIG.RETIREMENT_EXPLORER.PORT
+);
+
 /**
  * Function to get retirement activities from the explorer API.
  *
@@ -13,7 +21,7 @@ const CONFIG = require('../config');
 const getRetirementActivities = async (page, limit, minHeight) => {
   try {
     const response = await superagent
-      .get(`${CONFIG.CLIMATE_EXPLORER_HOST}/v1/activities`)
+      .get(`${retirementExplorerUri}/v1/activities`)
       .query({
         page,
         limit,

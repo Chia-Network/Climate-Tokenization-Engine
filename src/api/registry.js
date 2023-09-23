@@ -2,18 +2,21 @@ const superagent = require("superagent");
 const CONFIG = require("../config");
 const { logger } = require("../logger");
 
-/**
- * @type {{ CADT_API_SERVER_HOST: string, CADT_API_KEY: string }}
- */
-const { CADT_API_SERVER_HOST, CADT_API_KEY } = CONFIG;
+const { generateUriForHostAndPort } = require("../utils");
+
+const retirementExplorerUri = generateUriForHostAndPort(
+  CONFIG.REGISTRY.PROTOCOL,
+  CONFIG.REGISTRY.HOST,
+  CONFIG.REGISTRY.PORT
+);
 
 /**
  * Helper function to set API key header
  * @param {superagent.Request} request
  */
 const setApiKeyHeader = (request) => {
-  if (CADT_API_KEY) {
-    request.set("x-api-key", CADT_API_KEY);
+  if (CONFIG.REGISTRY.API_KEY) {
+    request.set("x-api-key", CONFIG.REGISTRY.API_KEY);
   }
 };
 
@@ -22,7 +25,7 @@ const setApiKeyHeader = (request) => {
  * @returns {Promise<void>}
  */
 const commitStagingData = async () => {
-  const request = superagent.post(`${CADT_API_SERVER_HOST}/v1/staging/commit`);
+  const request = superagent.post(`${retirementExplorerUri}/v1/staging/commit`);
   setApiKeyHeader(request);
   await request;
   await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -72,7 +75,7 @@ const insertUnit = async (unit) => {
 const updateUnit = async (unit) => {
   const cleanedUnit = cleanUnitBeforeUpdating(unit);
   const request = superagent
-    .put(`${CADT_API_SERVER_HOST}/v1/units`)
+    .put(`${retirementExplorerUri}/v1/units`)
     .send(cleanedUnit)
     .set("Content-Type", "application/json");
   setApiKeyHeader(request);
@@ -105,7 +108,7 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   const request = superagent.get(
-    `${CADT_API_SERVER_HOST}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+    `${retirementExplorerUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
   );
   setApiKeyHeader(request);
   return await request;
@@ -118,7 +121,7 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 const getLastProcessedHeight = async () => {
   const homeOrgUid = await getHomeOrgUid();
   const request = superagent
-    .get(`${CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+    .get(`${retirementExplorerUri}/v1/organizations/metadata`)
     .query({ orgUid: homeOrgUid });
   setApiKeyHeader(request);
   const response = await request;
@@ -142,7 +145,7 @@ const getHomeOrgUid = async () => {
  * @returns {Promise<object|null>}
  */
 const getHomeOrg = async () => {
-  const request = superagent.get(`${CADT_API_SERVER_HOST}/v1/organizations`);
+  const request = superagent.get(`${retirementExplorerUri}/v1/organizations`);
   setApiKeyHeader(request);
   const response = await request;
 
@@ -162,7 +165,7 @@ const getHomeOrg = async () => {
  */
 const setLastProcessedHeight = async (height) => {
   const request = superagent
-    .post(`${CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+    .post(`${retirementExplorerUri}/v1/organizations/metadata`)
     .send({ lastRetiredBlockHeight: height.toString() })
     .set("Content-Type", "application/json");
   setApiKeyHeader(request);
@@ -171,7 +174,7 @@ const setLastProcessedHeight = async (height) => {
 
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
-    if (CONFIG.CORE_REGISTRY_MODE) {
+    if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
       token.detokenization = {
         mod_hash: "",
         public_key: "",
@@ -180,7 +183,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
     }
 
     const response = await superagent
-      .post(`${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata`)
+      .post(`${retirementExplorerUri}/v1/organizations/metadata`)
       .send({ [token.asset_id]: JSON.stringify(token) })
       .set(addCadtApiKeyHeader({ "Content-Type": "application/json" }));
 
@@ -192,7 +195,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
     ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
-      if (isTokenRegistered && CONFIG.CORE_REGISTRY_MODE) {
+      if (isTokenRegistered && CONFIG.GENERAL.CORE_REGISTRY_MODE) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
@@ -217,7 +220,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
  */
 async function getOrgMetaData(orgUid) {
   try {
-    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const url = `${retirementExplorerUri}/v1/organizations/metadata?orgUid=${orgUid}`;
     const response = await superagent.get(url).set(addCadtApiKeyHeader());
     return response.body;
   } catch (error) {
@@ -235,7 +238,7 @@ async function getOrgMetaData(orgUid) {
  */
 async function getProjectByWarehouseProjectId(warehouseProjectId) {
   try {
-    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/projects?projectIds=${warehouseProjectId}`;
+    const url = `${retirementExplorerUri}/v1/projects?projectIds=${warehouseProjectId}`;
     const response = await superagent.get(url).set(addCadtApiKeyHeader());
     return response.body[0];
   } catch (error) {
@@ -253,7 +256,7 @@ async function getProjectByWarehouseProjectId(warehouseProjectId) {
  */
 async function getTokenizedUnitByAssetId(assetId) {
   try {
-    const url = `${CONFIG.CADT_API_SERVER_HOST}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const url = `${retirementExplorerUri}/v1/units?marketplaceIdentifiers=${assetId}`;
     const response = await superagent.get(url).set(addCadtApiKeyHeader());
     return response.body;
   } catch (error) {
@@ -314,12 +317,12 @@ const splitUnit = async ({
 
   try {
     const request = superagent
-      .post(`${CADT_API_SERVER_HOST}/v1/units/split`)
+      .post(`${retirementExplorerUri}/v1/units/split`)
       .send(JSON.stringify(dataToBeSubmitted))
       .set("Content-Type", "application/json");
 
-    if (CADT_API_KEY) {
-      request.set("x-api-key", CADT_API_KEY);
+    if (CONFIG.REGISTRY.API_KEY) {
+      request.set("x-api-key", CONFIG.REGISTRY.API_KEY);
     }
 
     await request;

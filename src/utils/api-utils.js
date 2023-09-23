@@ -23,7 +23,7 @@ const getBaseRpcOptions = () => {
     key = Buffer.from(process.env.CHIA_KEY_BASE64, "base64").toString("ascii");
   } else {
     let certificateFolderPath =
-      CONFIG.CERTIFICATE_FOLDER_PATH || `${chiaRoot}/config/ssl`;
+      CONFIG.GENRAL.CERTIFICATE_FOLDER_PATH || `${chiaRoot}/config/ssl`;
 
     // Replace "~" with home directory if it starts the path
     if (certificateFolderPath.startsWith("~")) {
@@ -60,8 +60,8 @@ const getBaseRpcOptions = () => {
  * @returns {Object} Headers with CADT API Key added if available
  */
 const addCadtApiKeyHeader = (headers = {}) => {
-  if (CONFIG.CADT_API_KEY) {
-    headers['x-api-key'] = CONFIG.CADT_API_KEY;
+  if (CONFIG.REGISTRY.API_KEY) {
+    headers["x-api-key"] = CONFIG.REGISTRY.API_KEY;
   }
   return headers;
 };
@@ -97,10 +97,26 @@ const handleApiRequestWithRetries = async (requestFn, maxRetries = 3, retryInter
   }
 };
 
+/**
+ * Generate a URI for a given host and optional port, using the specified protocol.
+ * @param {string} protocol - The protocol (e.g., 'http', 'https').
+ * @param {string} host - The host (e.g., 'example.com').
+ * @param {number | undefined} port - The optional port number.
+ * @returns {string} The generated URI.
+ */
+function generateUriForHostAndPort(protocol, host, port) {
+  let hostUri = `${protocol}://${host}`;
+  if (port) {
+    hostUri += `:${port}`;
+  }
+  return hostUri;
+}
+
 
 module.exports = {
   getBaseRpcOptions,
   addCadtApiKeyHeader,
   sleep,
   handleApiRequestWithRetries,
+  generateUriForHostAndPort,
 };

@@ -1,6 +1,19 @@
 const superagent = require("superagent");
+
 const { logger } = require("../logger");
 const CONFIG = require("../config");
+
+const {
+  generateUriForHostAndPort,
+  sleep,
+  handleApiRequestWithRetries,
+} = require("../utils");
+
+const tokenDriverUri = generateUriForHostAndPort(
+  CONFIG.TOKEN_DRIVER.PROTOCOL,
+  CONFIG.TOKEN_DRIVER.HOST,
+  CONFIG.TOKEN_DRIVER.PORT
+);
 
 /**
  * @async
@@ -11,7 +24,7 @@ const CONFIG = require("../config");
  */
 const sendParseDetokRequest = async (detokString) => {
   try {
-    const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const url = `${tokenDriverUri}/v1/tokens/parse-detokenization?content=${detokString}`;
     const response = await superagent.get(url);
     return response.body;
   } catch (error) {
@@ -35,7 +48,7 @@ const confirmTokenCreationWithTransactionId = async (
     try {
       await sleep(30000);
       const response = await superagent.get(
-        `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/transactions/${transactionId}`
+        `${tokenDriverUri}/v1/transactions/${transactionId}`
       );
       const isTokenCreationConfirmed = response.body?.record?.confirmed;
 
@@ -73,9 +86,7 @@ const confirmDetokanization = async (requestBody) => {
 
     return handleApiRequestWithRetries(async () => {
       return await superagent
-        .put(
-          `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/${assetId}/detokenize`
-        )
+        .put(`${tokenDriverUri}/v1/tokens/${assetId}/detokenize`)
         .send(requestBody)
         .set({ "Content-Type": "application/json" });
     });

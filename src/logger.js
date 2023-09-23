@@ -4,7 +4,7 @@ const packageJson = require("../package.json");
 
 const logger = new Logger({
   projectName: "tokenization-engine",
-  logLevel: CONFIG.LOG_LEVEL,
+  logLevel: CONFIG.GENERAL.LOG_LEVEL,
   packageVersion: packageJson.version,
 });
 

@@ -3,12 +3,14 @@ const https = require("https");
 const { getBaseRpcOptions } = require("../utils/api-utils");
 const CONFIG = require('../config');
 
+const { WALLET_HOST } = CONFIG.CHIA;
+
 const walletIsSynced = async () => {
   try {
     const { cert, key, timeout } = getBaseRpcOptions();
 
     const response = await superagent
-      .post(`${CONFIG.WALLET_HOST}/get_sync_status`)
+      .post(`${WALLET_HOST}/get_sync_status`)
       .send({})
       .key(key)
       .cert(cert)
@@ -47,7 +49,7 @@ const hasUnconfirmedTransactions = async (options) => {
   const { cert, key, timeout } = getBaseRpcOptions();
 
   const response = await superagent
-    .post(`${CONFIG.WALLET_HOST}/get_transactions`)
+    .post(`${WALLET_HOST}/get_transactions`)
     .send({
       wallet_id: options?.walletId || 1,
       sort_key: "RELEVANCE",

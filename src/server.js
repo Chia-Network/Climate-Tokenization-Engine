@@ -1,4 +1,4 @@
-const os = require('os');
+const os = require("os");
 const express = require("express");
 const { logger } = require("./logger");
 const CONFIG = require("./config");
@@ -24,7 +24,6 @@ const bodyParser = require("body-parser");
 const formData = require("express-form-data");
 
 const app = express();
-const port = CONFIG.CLIMATE_TOKENIZATION_ENGINE_PORT;
 
 // Middleware
 const options = {
@@ -53,23 +52,33 @@ app.use(errorHandler);
 // Initialize server
 let shouldListen = false;
 
-if (CONFIG.BIND_ADDRESS !== "localhost") {
-  if (CONFIG.CLIMATE_TOKENIZATION_ENGINE_API_KEY) {
-    shouldListen = true;
-  }
+// Check if CONFIG.TOKENIZATION_ENGINE.HOST is either "localhost" or "127.0.0.1"
+// OR if CONFIG.TOKENIZATION_ENGINE.API_KEY exists.
+// In either case, set shouldListen to true.
+if (
+  ["localhost", "127.0.0.1"].includes(CONFIG.TOKENIZATION_ENGINE.HOST) ||
+  CONFIG.TOKENIZATION_ENGINE.API_KEY
+) {
+  shouldListen = true;
 }
 
 if (shouldListen) {
-  app.listen(port, CONFIG.BIND_ADDRESS, () => {
-    logger.info(`Application is running on port ${port}.`);
-  });
+  app.listen(
+    CONFIG.TOKENIZATION_ENGINE.PORT,
+    CONFIG.TOKENIZATION_ENGINE.HOST,
+    () => {
+      logger.info(
+        `Application is running on port ${CONFIG.TOKENIZATION_ENGINE.PORT}.`
+      );
+    }
+  );
 
   // Starting the scheduler
-  if (CONFIG.CORE_REGISTRY_MODE) {
+  if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
     setTimeout(() => scheduler.start(), 5000);
   }
 } else {
   logger.warn(
-    "Server was not started because CLIMATE_TOKENIZATION_ENGINE_API_KEY is not set in config.yaml"
+    "Server not started due to missing CONFIG.TOKENIZATION_ENGINE.API_KEY on a non-local host."
   );
 }

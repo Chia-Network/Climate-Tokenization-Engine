@@ -4,4 +4,4 @@ const configManager = new ConfigManager(defaultConfig);
 
 const CONFIG = configManager.config;
 
-module.exports = CONFIG.TOKENIZATION_ENGINE;
+module.exports = CONFIG;
