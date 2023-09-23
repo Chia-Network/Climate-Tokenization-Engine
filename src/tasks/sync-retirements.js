@@ -109,12 +109,6 @@ const processResult = async ({
  * @returns {Promise<void>}
  */
 const getAndProcessActivities = async (minHeight = 0) => {
-  if (isTaskInProgress) {
-    return;
-  }
-
-  isTaskInProgress = true;
-
   try {
     let page = 1;
     const limit = 10;
@@ -137,7 +131,7 @@ const getAndProcessActivities = async (minHeight = 0) => {
       page++;
     }
   } catch (error) {
-    console.error("Cannot get retirement activities", error);
+    throw new Error(`Cannot get retirement activities: ${error.message}`);
   } finally {
     isTaskInProgress = false;
   }
@@ -151,11 +145,13 @@ const task = new Task("sync-retirements", async () => {
   try {
     const homeOrg = await getHomeOrg();
     if (!homeOrg) {
-      logger.warn("Can not attain home orgination from the registry, skipping sync-retirements task");
+      logger.warn(
+        "Can not attain home organization from the registry, skipping sync-retirements task"
+      );
       return;
     }
-    const lastProcessedHeight = await getLastProcessedHeight();
 
+    const lastProcessedHeight = await getLastProcessedHeight();
     if (lastProcessedHeight == null) {
       logger.warn(
         "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
@@ -163,9 +159,12 @@ const task = new Task("sync-retirements", async () => {
       return;
     }
 
-    await getAndProcessActivities(lastProcessedHeight);
+    if (!isTaskInProgress) {
+      isTaskInProgress = true;
+      await getAndProcessActivities(lastProcessedHeight);
+    }
   } catch (error) {
-    logger.error(`Error in sync-retirements task: ${error.message}`);
+    logger.task_error(`Error in sync-retirements task: ${error.message}`);
   }
 });
 

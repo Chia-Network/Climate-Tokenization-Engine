@@ -119,16 +119,20 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
  * @returns {Promise<number | null>}
  */
 const getLastProcessedHeight = async () => {
-  const homeOrgUid = await getHomeOrgUid();
-  const response = await superagent
-    .get(`${retirementExplorerUri}/v1/organizations/metadata`)
-    .query({ orgUid: homeOrgUid });
-    
-  setApiKeyHeader(response);
+  try {
+    const homeOrgUid = await getHomeOrgUid();
+    const response = await superagent
+      .get(`${retirementExplorerUri}/v1/organizations/metadata`)
+      .query({ orgUid: homeOrgUid });
 
-  return response.status === 200
-    ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
-    : null;
+    setApiKeyHeader(response);
+
+    return response.status === 200
+      ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
+      : null;
+  } catch (error) {
+    return null;
+  }
 };
 
 /**
@@ -145,17 +149,23 @@ const getHomeOrgUid = async () => {
  * @returns {Promise<object|null>}
  */
 const getHomeOrg = async () => {
-  const request = superagent.get(`${retirementExplorerUri}/v1/organizations`);
-  setApiKeyHeader(request);
-  const response = await request;
+  try {
+    const request = superagent.get(`${retirementExplorerUri}/v1/organizations`);
+    setApiKeyHeader(request);
+    const response = await request;
 
-  if (response.status !== 200) {
-    throw new Error(`Received non-200 status code: ${response.status}`);
+    if (response.status !== 200) {
+      throw new Error(`Received non-200 status code: ${response.status}`);
+    }
+
+    const orgArray = Object.keys(response.body).map(
+      (key) => response.body[key]
+    );
+
+    return orgArray.find((org) => org.isHome) || null;
+  } catch (error) {
+    return null;
   }
-
-  const orgArray = Object.keys(response.body).map((key) => response.body[key]);
-
-  return orgArray.find((org) => org.isHome) || null;
 };
 
 /**
@@ -202,11 +212,11 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
         );
       }
     } else {
-      logger.error("Could not register token creation on climate warehouse.");
+      logger.error("Could not register token creation in registry.");
     }
   } catch (error) {
     logger.error(
-      `Could not register token creation on climate warehouse: ${error.message}`
+      `Could not register token creation in registry: ${error.message}`
     );
   }
 };
