@@ -1,24 +1,34 @@
-
 const { SimpleIntervalJob, Task } = require("toad-scheduler");
-const superagent = require("superagent");
+const { logger } = require("../logger");
+const { waitForAllTransactionsToConfirm } = require("../chia/wallet");
+const { getRetirementActivities } = require("../api/retirement-explorer");
+
 const {
-  getConfig,
-  logger,
-  waitForAllTransactionsToConfirm,
+  commitStagingData,
+  deleteStagingData,
+  splitUnit,
+  retireUnit,
+  setLastProcessedHeight,
   getHomeOrg,
   getLastProcessedHeight,
-  setLastProcessedHeight,
-  retireUnit,
-  splitUnit,
-  deleteStagingData,
-  commitStagingData,
-} = require("../../utils");
+  getAssetUnitBlocks,
+} = require("../api/registry");
 
-/**
- * Global variables
- */
-let CONFIG = getConfig();
 let isTaskInProgress = false;
+
+const findHighestHeight = (activities) => {
+  let highestHeight = 0;
+
+  activities.forEach((activity) => {
+    const height = activity.height;
+
+    if (height > highestHeight) {
+      highestHeight = height;
+    }
+  });
+
+  return highestHeight;
+}
 
 /**
  * Process individual units for retirement
@@ -77,7 +87,7 @@ const processResult = async ({
       .filter((unit) => unit.unitStatus !== "Retired")
       .sort((a, b) => b.unitCount - a.unitCount);
     if (!units || units.length === 0) {
-      logger.info(`No units for ${marketplaceIdentifier}`);
+      logger.task(`No units for ${marketplaceIdentifier}`);
       return;
     }
     await processUnits(units, amount, beneficiaryName, beneficiaryAddress);
@@ -86,7 +96,7 @@ const processResult = async ({
       throw new Error("Total unitCount lower than needed retire amount.");
     }
     await commitStagingData();
-    logger.info("Auto Retirement Process Complete");
+    logger.task("Auto Retirement Process Complete");
   } catch (err) {
     console.trace(err);
     throw new Error("Could not retire unit block", err);
@@ -102,22 +112,20 @@ const getAndProcessActivities = async (minHeight = 0) => {
   if (isTaskInProgress) {
     return;
   }
+
   isTaskInProgress = true;
+
   try {
     let page = 1;
     const limit = 10;
     while (true) {
-      const { body } = await superagent
-        .get(`${CONFIG.CLIMATE_EXPLORER_HOST}/v1/activities`)
-        .query({ page, limit, minHeight: Number(minHeight) + 1, sort: "asc" })
-        .timeout({ response: 300000, deadline: 600000 });
-      const retirements =
-        body?.activities?.filter(
-          (a) =>
-            a.mode === "PERMISSIONLESS_RETIREMENT" &&
-            a.height > Number(minHeight)
-        ) || [];
-      if (!retirements.length && !body?.activities?.length) {
+      const retirements = await getRetirementActivities(
+        page,
+        limit,
+        minHeight
+      );
+
+      if (!retirements.length) {
         break;
       }
       for (const activity of retirements) {
@@ -143,12 +151,17 @@ const getAndProcessActivities = async (minHeight = 0) => {
  * Scheduler task definition
  */
 const task = new Task("sync-retirements", async () => {
-  const homeOrg = await getHomeOrg();
-  if (!homeOrg) {
-    return;
+  logger.task("Starting sync-retirements task");
+  try {
+    const homeOrg = await getHomeOrg();
+    if (!homeOrg) {
+      return;
+    }
+    const lastProcessedHeight = await getLastProcessedHeight();
+    await getAndProcessActivities(lastProcessedHeight);
+  } catch (error) {
+    logger.error(`Error in sync-retirements task: ${error.message}`);
   }
-  const lastProcessedHeight = await getLastProcessedHeight();
-  await getAndProcessActivities(lastProcessedHeight);
 });
 
 /**
@@ -160,7 +173,4 @@ const job = new SimpleIntervalJob(
   "sync-retirements"
 );
 
-/**
- * Export the job
- */
 module.exports = job;

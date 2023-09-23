@@ -1,7 +1,23 @@
 const superagent = require("superagent");
-const CONFIG = require("./config");
-const logger = require("./logger");
-const { sleep, handleApiRequestWithRetries } = require("./utils");
+const { logger } = require("../logger");
+const CONFIG = require("../config");
+
+/**
+ * @async
+ * @function sendParseDetokRequest
+ * @param {string} detokString - The string to be detokenized.
+ * @throws Will throw an error if the request cannot be processed.
+ * @return {Promise<Object>} The API response body.
+ */
+const sendParseDetokRequest = async (detokString) => {
+  try {
+    const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
+    const response = await superagent.get(url);
+    return response.body;
+  } catch (error) {
+    throw new Error(`Detokenize api could not process request: ${error}`);
+  }
+}
 
 /**
  * Confirms if the token creation has been completed with a given transaction ID.
@@ -44,20 +60,6 @@ const confirmTokenCreationWithTransactionId = async (
 };
 
 /**
- * Sends a request to parse detokenization content.
- * @param {string} detokString - The detokenization string to parse
- * @returns {Promise<Object>} - A promise that resolves to an object containing the parsed data.
- */
-const sendParseDetokRequest = async (detokString) => {
-  try {
-    const url = `${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens/parse-detokenization?content=${detokString}`;
-    return (await superagent.get(url)).body;
-  } catch (error) {
-    throw new Error(`Detokenize API could not process request: ${error}`);
-  }
-};
-
-/**
  * Confirms if detokenization has been completed.
  * @param {Object} requestBody - The body of the request containing details for confirmation
  * @returns {Promise<Object>} - A promise that resolves to an object containing the confirmation response.
@@ -83,7 +85,7 @@ const confirmDetokanization = async (requestBody) => {
 };
 
 module.exports = {
-  confirmTokenCreationWithTransactionId,
   sendParseDetokRequest,
+  confirmTokenCreationWithTransactionId,
   confirmDetokanization,
 };

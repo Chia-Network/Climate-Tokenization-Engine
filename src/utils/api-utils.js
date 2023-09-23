@@ -2,27 +2,21 @@ const os = require("os");
 const path = require("path");
 const fs = require("fs");
 const { getChiaRoot } = require("chia-root-resolver");
-const { getConfig } = require("../utils/config-loader");
-const superagent = require("superagent");
-
-/**
- * Configuration object
- * @type {object}
- */
-let CONFIG = getConfig();
+const { logger } = require("../logger");
+const CONFIG = require('../config')
 
 /**
  * Get base options for request.
  *
  * @returns {object} Base options object containing method, cert, key, and timeout
  */
-const getBaseOptions = () => {
+const getBaseRpcOptions = () => {
   const chiaRoot = getChiaRoot();
   let cert, key;
 
   // Check if certificates and key are provided in environment variables
   if (process.env.CHIA_CERT_BASE64 && process.env.CHIA_KEY_BASE64) {
-    console.log(`Using cert and key from environment variables.`);
+    logger.info(`Using cert and key from environment variables.`);
     cert = Buffer.from(process.env.CHIA_CERT_BASE64, "base64").toString(
       "ascii"
     );
@@ -105,7 +99,7 @@ const handleApiRequestWithRetries = async (requestFn, maxRetries = 3, retryInter
 
 
 module.exports = {
-  getBaseOptions,
+  getBaseRpcOptions,
   addCadtApiKeyHeader,
   sleep,
   handleApiRequestWithRetries,

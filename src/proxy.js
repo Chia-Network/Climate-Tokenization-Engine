@@ -1,5 +1,6 @@
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const { getHomeOrgUid, updateQueryWithParam } = require("./utils");
+const { getHomeOrgUid } = require("./api/registry");
+const { updateQueryWithParam } = require("./utils");
 const CONFIG = require("./config");
 
 /**

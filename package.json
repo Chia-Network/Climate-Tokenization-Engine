@@ -5,7 +5,7 @@
   "description": "",
   "main": "proxy.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node --no-warnings src/server.js",
     "prepare-binary": "rm -rf dist && mkdir dist",
     "create-win-x64-dist": "pkg package.json -t node16-win-x64 --out-path dist",
@@ -28,9 +28,12 @@
   },
   "homepage": "https://github.com/Chia-Network/climate-tokenization-engine#readme",
   "dependencies": {
+    "@chia-carbon/core-registry-config": "^1.0.1",
+    "@chia-carbon/core-registry-logger": "^1.0.9",
     "body-parser": "^1.20.2",
     "chia-datalayer": "^2.0.0",
     "chia-root-resolver": "^1.0.0",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-form-data": "^2.0.22",
     "express-joi-validation": "^5.0.1",
@@ -41,11 +44,15 @@
     "superagent": "^8.0.9",
     "toad-scheduler": "^3.0.0",
     "unzipper": "^0.10.14",
-    "winston": "^3.9.0",
+    "winston": "^3.10.0",
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "chai": "^4.3.4",
     "cors": "^2.8.5",
-    "pkg": "^5.8.1"
+    "jest": "^27.0.0",
+    "pkg": "^5.8.1",
+    "sinon": "^11.1.2",
+    "sinon-chai": "^3.7.0"
   }
 }

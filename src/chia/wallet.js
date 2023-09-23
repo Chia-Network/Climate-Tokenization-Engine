@@ -1,12 +1,11 @@
 const superagent = require("superagent");
 const https = require("https");
-const { getBaseOptions } = require("../utils/api-utils");
-const { getConfig } = require("../utils/config-loader");
-let CONFIG = getConfig();
+const { getBaseRpcOptions } = require("../utils/api-utils");
+const CONFIG = require('../config');
 
 const walletIsSynced = async () => {
   try {
-    const { cert, key, timeout } = getBaseOptions();
+    const { cert, key, timeout } = getBaseRpcOptions();
 
     const response = await superagent
       .post(`${CONFIG.WALLET_HOST}/get_sync_status`)
@@ -45,7 +44,7 @@ const waitForAllTransactionsToConfirm = async () => {
 };
 
 const hasUnconfirmedTransactions = async (options) => {
-  const { cert, key, timeout } = getBaseOptions();
+  const { cert, key, timeout } = getBaseRpcOptions();
 
   const response = await superagent
     .post(`${CONFIG.WALLET_HOST}/get_transactions`)
