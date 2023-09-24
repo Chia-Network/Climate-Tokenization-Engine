@@ -3,7 +3,6 @@ const Datalayer = require("chia-datalayer");
 const CONFIG = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
-
 const { generateUriForHostAndPort } = require("../utils");
 
 const registryUri = generateUriForHostAndPort(
@@ -13,8 +12,9 @@ const registryUri = generateUriForHostAndPort(
 );
 
 /**
- * Adds Registry API Key to the request headers if available.
- * @param {Object} headers - Optional headers to extend
+ * Appends Registry API Key to the request headers if available.
+ *
+ * @param {Object} [headers={}] - Optional headers to extend
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendRegistryApiKey = (headers = {}) => {
@@ -25,60 +25,67 @@ const maybeAppendRegistryApiKey = (headers = {}) => {
 };
 
 /**
- * Commit staging data to warehouse.
- * @returns {Promise<void>}
+ * Commits staging data to the warehouse.
+ *
+ * @returns {Promise<Object>} The response body
  */
 const commitStagingData = async () => {
-  const request = await superagent
+  const response = await superagent
     .post(`${registryUri}/v1/staging/commit`)
     .set(maybeAppendRegistryApiKey());
 
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  await wallet.waitForAllTransactionsToConfirm();
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  await waitForRegistryDataSync();
+  await new Promise(resolve => setTimeout(resolve, 5000)),
+  await wallet.waitForAllTransactionsToConfirm(),
+  await new Promise(resolve => setTimeout(resolve, 5000)),
+  await waitForRegistryDataSync()
+
+  return response.body;
 };
 
 /**
- * Clean a unit object before updating.
- * @param {object} unit
- * @returns {object}
+ * Cleans a unit object before updating it.
+ *
+ * @param {Object} unit - The unit to be updated
+ * @returns {Object} The cleaned unit
  */
 const cleanUnitBeforeUpdating = (unit) => {
-  const unitToBeUpdated = { ...unit };
-  delete unitToBeUpdated.issuance?.orgUid;
-  delete unitToBeUpdated.issuanceId;
-  delete unitToBeUpdated.orgUid;
-  delete unitToBeUpdated.serialNumberBlock;
+  const cleanedUnit = { ...unit };
+  ['issuance?.orgUid', 'issuanceId', 'orgUid', 'serialNumberBlock'].forEach(key => {
+    delete cleanedUnit[key];
+  });
 
-  Object.keys(unitToBeUpdated).forEach(function (key) {
-    if (this[key] == null) {
-      delete this[key];
+  Object.keys(cleanedUnit).forEach(key => {
+    if (cleanedUnit[key] === null) {
+      delete cleanedUnit[key];
     }
-  }, unitToBeUpdated);
+  });
 
-  return unitToBeUpdated;
+  return cleanedUnit;
 };
 
 /**
- * Update a given unit.
- * @param {object} unit
- * @returns {Promise<void>}
+ * Updates a given unit.
+ *
+ * @param {Object} unit - The unit to update
+ * @returns {Promise<Object>} The response body
  */
 const updateUnit = async (unit) => {
   const cleanedUnit = cleanUnitBeforeUpdating(unit);
-  const request = await superagent
+  const response = await superagent
     .put(`${registryUri}/v1/units`)
     .send(cleanedUnit)
     .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+
+  return response?.body;
 };
 
 /**
- * Retire a given unit.
- * @param {object} unit
- * @param {string} beneficiaryName
- * @param {string} beneficiaryAddress
- * @returns {Promise<void>}
+ * Retires a given unit.
+ *
+ * @param {Object} unit - The unit to retire
+ * @param {string} beneficiaryName - The name of the beneficiary
+ * @param {string} beneficiaryAddress - The address of the beneficiary
+ * @returns {Promise<Object>} The response body
  */
 const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
   const cleanedUnit = cleanUnitBeforeUpdating(unit);
@@ -89,27 +96,27 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
     cleanedUnit.unitStatusReason = beneficiaryAddress;
   }
   cleanedUnit.unitStatus = "Retired";
-  await updateUnit(cleanedUnit);
+  return await updateUnit(cleanedUnit);
 };
 
 /**
- * Get asset unit blocks by marketplace identifier
- * @param {string} marketplaceIdentifier
- * @returns {Promise<superagent.Response>}
+ * Gets asset unit blocks by a marketplace identifier.
+ *
+ * @param {string} marketplaceIdentifier - The marketplace identifier
+ * @returns {Promise<Object>} The response body
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   const response = await superagent
-    .get(
-      `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
-    )
-    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
-  
-    return response?.body;
+    .get(`${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`)
+    .set(maybeAppendRegistryApiKey());
+
+  return response?.body;
 };
 
 /**
- * Get last processed block height.
- * @returns {Promise<number | null>}
+ * Gets the last processed block height.
+ *
+ * @returns {Promise<number|null>} The last processed height or null
  */
 const getLastProcessedHeight = async () => {
   try {
@@ -117,7 +124,7 @@ const getLastProcessedHeight = async () => {
     const response = await superagent
       .get(`${registryUri}/v1/organizations/metadata`)
       .query({ orgUid: homeOrgUid })
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+      .set(maybeAppendRegistryApiKey());
 
     return response.status === 200
       ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
@@ -128,8 +135,9 @@ const getLastProcessedHeight = async () => {
 };
 
 /**
- * Get home organization UID.
- * @returns {Promise<string|null>}
+ * Gets the home organization UID.
+ *
+ * @returns {Promise<string|null>} The home organization UID or null
  */
 const getHomeOrgUid = async () => {
   const homeOrg = await getHomeOrg();
@@ -137,38 +145,37 @@ const getHomeOrgUid = async () => {
 };
 
 /**
- * Get home organization.
- * @returns {Promise<object|null>}
+ * Gets the home organization.
+ *
+ * @returns {Promise<Object|null>} The home organization or null
  */
 const getHomeOrg = async () => {
   try {
     const response = await superagent
       .get(`${registryUri}/v1/organizations`)
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+      .set(maybeAppendRegistryApiKey());
 
     if (response.status !== 200) {
       throw new Error(`Received non-200 status code: ${response.status}`);
     }
 
-    const orgArray = Object.keys(response.body).map(
-      (key) => response.body[key]
-    );
-
-    return orgArray.find((org) => org.isHome) || null;
+    const orgArray = Object.keys(response.body).map(key => response.body[key]);
+    return orgArray.find(org => org.isHome) || null;
   } catch (error) {
     return null;
   }
 };
 
 /**
- * Set last processed block height.
- * @param {number} height
- * @returns {Promise<void>}
+ * Sets the last processed block height.
+ *
+ * @param {number} height - The last processed height
+ * @returns {Promise<Object>} The response body
  */
 const setLastProcessedHeight = async (height) => {
-  await wallet.waitForAllTransactionsToConfirm();
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  await waitForRegistryDataSync();
+  await wallet.waitForAllTransactionsToConfirm(),
+  await new Promise(resolve => setTimeout(resolve, 5000)),
+  await waitForRegistryDataSync()
 
   const response = await superagent
     .post(`${registryUri}/v1/organizations/metadata`)
@@ -177,34 +184,58 @@ const setLastProcessedHeight = async (height) => {
 
   const data = response.body;
 
-  if (
-    response.status !== 200 ||
-    data.message !== "Home org currently being updated, will be completed soon."
-  ) {
-    logger.fatal(
-      `CRITICAL ERROR: Could not set last processed height in registry.`
-    );
+  if (response.status !== 200 || data.message !== "Home org currently being updated, will be completed soon.") {
+    logger.fatal(`CRITICAL ERROR: Could not set last processed height in registry.`);
     return;
   }
 
-  await wallet.waitForAllTransactionsToConfirm();
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  await waitForRegistryDataSync();
+  await wallet.waitForAllTransactionsToConfirm(),
+  await new Promise(resolve => setTimeout(resolve, 5000)),
+  await waitForRegistryDataSync()
+
+  return data;
 };
 
+/**
+ * Confirms token registration on the warehouse.
+ *
+ * @param {number} [retry=0] - The retry count
+ * @returns {Promise<boolean>} True if confirmed, false otherwise
+ */
+const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
+  if (retry > 60) return false;
+
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    const response = await superagent
+      .get(`${registryUri}/v1/staging/hasPendingTransactions`)
+      .set(maybeAppendRegistryApiKey());
+
+    const thereAreNoPendingTransactions = response.body?.confirmed;
+    if (thereAreNoPendingTransactions) return true;
+
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    return confirmTokenRegistrationOnWarehouse(retry + 1);
+  } catch (error) {
+    logger.error(`Error confirming token registration on warehouse: ${error.message}`);
+    return false;
+  }
+};
+
+/**
+ * Registers token creation on the registry.
+ *
+ * @param {Object} token - The token to register
+ * @param {string} warehouseUnitId - The warehouse unit ID
+ * @returns {Promise<Object>} The response body
+ */
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    // When running in core registry mode, we don't want to be able to detokenize
-    // We need to delete the detokenization object from the token
-    // but because of validation, we need to replace it empty strings
+    // Running in core registry mode, detokenization object is replaced with empty strings
     if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
-      token.detokenization = {
-        mod_hash: "",
-        public_key: "",
-        signature: "",
-      };
+      token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
     const response = await superagent
@@ -213,155 +244,79 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     const data = response.body;
-
-    if (
-      data.message ===
-      "Home org currently being updated, will be completed soon."
-    ) {
+    if (data.message === "Home org currently being updated, will be completed soon.") {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
       if (isTokenRegistered && CONFIG.GENERAL.CORE_REGISTRY_MODE) {
-        await updateUnitMarketplaceIdentifierWithAssetId(
-          warehouseUnitId,
-          token.asset_id
-        );
+        await updateUnitMarketplaceIdentifierWithAssetId(warehouseUnitId, token.asset_id);
       }
+
+      return response.body;
     } else {
       logger.error("Could not register token creation in registry.");
     }
   } catch (error) {
-    logger.error(
-      `Could not register token creation in registry: ${error.message}`
-    );
+    logger.error(`Could not register token creation in registry: ${error.message}`);
   }
 };
 
 /**
- * @async
- * @function getOrgMetaData
- * @param {string} orgUid - The unique identifier for the organization.
- * @throws Will throw an error if metadata cannot be fetched.
- * @return {Promise<Object>} The organization metadata.
+ * Updates unit marketplace identifier with asset ID.
+ *
+ * @param {string} warehouseUnitId - The warehouse unit ID
+ * @param {string} asset_id - The asset ID
  */
-async function getOrgMetaData(orgUid) {
+const updateUnitMarketplaceIdentifierWithAssetId = async (warehouseUnitId, asset_id) => {
   try {
-    const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
-    const response = await superagent
-      .get(url)
+    const unitToBeUpdatedResponse = await superagent
+      .get(`${registryUri}/v1/units`)
+      .query({ warehouseUnitId: warehouseUnitId })
       .set(maybeAppendRegistryApiKey());
-    return response.body;
-  } catch (error) {
-    logger.error(`Could not get org meta data: ${error.message}`);
-    throw new Error(`Could not get org meta data: ${error}`);
-  }
-}
 
-/**
- * @async
- * @function getProjectByWarehouseProjectId
- * @param {string} warehouseProjectId - The unique identifier for the warehouse project.
- * @throws Will throw an error if project data cannot be fetched.
- * @return {Promise<Object>} The project data.
- */
-async function getProjectByWarehouseProjectId(warehouseProjectId) {
-  try {
-    const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
-    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
-    return response.body[0];
-  } catch (error) {
-    logger.error(`Could not get corresponding project data: ${error.message}`);
-    throw new Error(`Could not get corresponding project data: ${error}`);
-  }
-}
+    const unitToBeUpdated = unitToBeUpdatedResponse.body;
+    unitToBeUpdated.marketplaceIdentifier = asset_id;
+    unitToBeUpdated.marketplace = "Tokenized on Chia";
 
-/**
- * @async
- * @function getTokenizedUnitByAssetId
- * @param {string} assetId - The unique identifier for the asset.
- * @throws Will throw an error if unit data cannot be fetched.
- * @return {Promise<Object>} The tokenized unit data.
- */
-async function getTokenizedUnitByAssetId(assetId) {
-  try {
-    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
-    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
-    return response.body;
-  } catch (error) {
-    logger.error(`Could not get tokenized unit by asset id. ${error.message}`);
-    throw new Error(`Could not get tokenized unit by asset id. ${error}`);
-  }
-}
+    ['issuance?.orgUid', 'issuanceId', 'orgUid', 'serialNumberBlock', 'unitCount', 'unitBlockStart', 'unitBlockEnd'].forEach(key => {
+      delete unitToBeUpdated[key];
+    });
 
-const splitUnit = async ({
-  unit,
-  amount,
-  beneficiaryName,
-  beneficiaryAddress,
-}) => {
-  console.log(
-    "Splitting unit",
-    JSON.stringify({
-      amount,
-      beneficiaryName,
-      beneficiaryAddress,
-    })
-  );
+    Object.keys(unitToBeUpdated).forEach(key => {
+      if (unitToBeUpdated[key] === null) {
+        delete unitToBeUpdated[key];
+      }
+    });
 
-  // Parse the serialNumberBlock
-  const { unitBlockStart, unitBlockEnd } = parseSerialNumber(
-    unit.serialNumberBlock
-  );
-
-  if (!unitBlockStart && !unitBlockEnd) {
-    console.error("serialNumberBlock is not in the correct format");
-    return;
-  }
-
-  const totalUnits = parseInt(unitBlockEnd) - parseInt(unitBlockStart) + 1;
-
-  if (amount >= totalUnits) {
-    throw new Error("Amount must be less than total units in the block");
-  }
-
-  const dataToBeSubmitted = {
-    warehouseUnitId: unit.warehouseUnitId,
-    records: [
-      {
-        unitCount: amount,
-        marketplace: unit.marketplace,
-        marketplaceIdentifier: unit.marketplaceIdentifier,
-        unitStatus: "Retired",
-        unitOwner: beneficiaryName,
-        unitStatusReason: beneficiaryAddress,
-      },
-      {
-        unitCount: totalUnits - amount,
-        marketplace: unit.marketplace,
-        marketplaceIdentifier: unit.marketplaceIdentifier,
-      },
-    ],
-  };
-
-  try {
-    const request = superagent
-      .post(`${registryUri}/v1/units/split`)
-      .send(JSON.stringify(dataToBeSubmitted))
+    await superagent
+      .put(`${registryUri}/v1/units`)
+      .send(unitToBeUpdated)
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
-
-    if (CONFIG.REGISTRY.API_KEY) {
-      request.set("x-api-key", CONFIG.REGISTRY.API_KEY);
-    }
-
-    await request;
   } catch (error) {
-    throw new Error(`Could not split detokenize unit on warehouse: ${error}`);
+    logger.error(`Could not update unit marketplace identifier with asset id: ${error.message}`);
   }
 };
 
-async function waitForRegistryDataSync() {
-  await new Promise((resolve) => setTimeout(() => resolve(), 5000));
+/**
+ * Fetches metadata for a specific organization.
+ *
+ * @param {string} orgUid - The unique identifier for the organization
+ * @returns {Promise<Object>} The organization metadata
+ */
+const getOrgMetaData = async (orgUid) => {
+  const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
+  const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+  return response.body;
+};
 
+/**
+ * Waits for the registry data to synchronize.
+ *
+ * @returns {Promise<void>}
+ */
+const waitForRegistryDataSync = async () => {
+  await new Promise(resolve => setTimeout(resolve, 5000));
   const dataLayerConfig = {};
+
   if (CONFIG.DATA_LAYER_HOST) {
     dataLayerConfig.datalayer_host = CONFIG.DATA_LAYER_HOST;
   }
@@ -375,9 +330,7 @@ async function waitForRegistryDataSync() {
   const datalayer = new Datalayer(dataLayerConfig);
   const homeOrg = await getHomeOrg();
 
-  const onChainRegistryRoot = await datalayer.getRoot({
-    id: homeOrg.registryId,
-  });
+  const onChainRegistryRoot = await datalayer.getRoot({ id: homeOrg.registryId });
 
   if (!onChainRegistryRoot.confirmed) {
     console.log("Waiting for Registry root to confirm");
@@ -392,9 +345,7 @@ async function waitForRegistryDataSync() {
     return waitForRegistryDataSync();
   }
 
-  const onChainOrgRoot = await datalayer.getRoot({
-    id: homeOrg.orgUid,
-  });
+  const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
 
   if (!onChainOrgRoot.confirmed) {
     console.log("Waiting for Organization root to confirm");
@@ -408,8 +359,46 @@ async function waitForRegistryDataSync() {
     });
     return waitForRegistryDataSync();
   }
-}
+};
 
+/**
+ * Gets the tokenized unit by asset ID.
+ *
+ * @param {string} assetId - The unique identifier for the asset
+ * @returns {Promise<Object>} The tokenized unit data
+ */
+const getTokenizedUnitByAssetId = async (assetId) => {
+  try {
+    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+    return response.body;
+  } catch (error) {
+    logger.error(`Could not get tokenized unit by asset id: ${error.message}`);
+    throw new Error(`Could not get tokenized unit by asset id: ${error}`);
+  }
+};
+
+/**
+ * Gets project data by warehouse project ID.
+ *
+ * @param {string} warehouseProjectId - The unique identifier for the warehouse project
+ * @returns {Promise<Object>} The project data
+ */
+const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
+  try {
+    const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
+    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+    return response.body[0];
+  } catch (error) {
+    logger.error(`Could not get corresponding project data: ${error.message}`);
+    throw new Error(`Could not get corresponding project data: ${error}`);
+  }
+};
+
+
+/**
+ * Placeholder function for deleting staging data.
+ */
 const deleteStagingData = async () => {
   console.log("Not implemented");
 };
@@ -426,9 +415,7 @@ module.exports = {
   setLastProcessedHeight,
   registerTokenCreationOnRegistry,
   getOrgMetaData,
-  getProjectByWarehouseProjectId,
-  getTokenizedUnitByAssetId,
-  splitUnit,
   deleteStagingData,
-  waitForRegistryDataSync,
+  getTokenizedUnitByAssetId,
+  getProjectByWarehouseProjectId,
 };

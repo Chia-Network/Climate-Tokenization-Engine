@@ -1,3 +1,4 @@
+const _ = require("lodash");
 const { logger } = require("./logger");
 const wallet = require("./chia/wallet");
 const tokenDriver = require("./api/token-driver");
@@ -19,25 +20,6 @@ const tokenizeUnit = async (req, res) => {
         message: "Please wait for all transactions to confirm.",
       });
     }
-
-    logger.info(
-      `Creating token: ${JSON.stringify(
-        {
-          token: {
-            org_uid: req.body.org_uid,
-            warehouse_project_id: req.body.warehouse_project_id,
-            vintage_year: req.body.vintage_year,
-            sequence_num: req.body.sequence_num,
-          },
-          payment: {
-            amount: (req.body.amount || 1) * 1000,
-            to_address: req.body.to_address,
-          },
-        },
-        2,
-        2
-      )}`
-    );
 
     const data = await tokenDriver.createToken({
       token: {

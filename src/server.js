@@ -16,11 +16,10 @@ const {
   setOrgUidHeader,
   setOptionalRegistryApiKey,
   assertHomeOrgExists,
-  maybeAppendRegistryApiKey,
 } = require("./middleware");
 
 const scheduler = require("./tasks");
-const setupProxyMiddleware = require("./proxy");
+const proxy = require("./proxy");
 const bodyParser = require("body-parser");
 const formData = require("express-form-data");
 
@@ -40,7 +39,10 @@ app.use(assertHomeOrgExists);
 app.use(setOrgUidHeader);
 app.use(setOptionalRegistryApiKey);
 
-setupProxyMiddleware(app);
+// proxy routes
+app.use("/units/tokenized", proxy.getTokenizedUnits());
+app.use("/projects", proxy.getProjectsFromRegistry());
+app.use("/units/untokenized", proxy.getUntokenizedUnits());
 
 // Routes
 app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);

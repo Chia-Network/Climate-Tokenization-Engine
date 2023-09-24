@@ -100,11 +100,21 @@ function generateUriForHostAndPort(protocol, host, port) {
   return hostUri;
 }
 
+const updateQueryWithParam = (query, ...params) => {
+  const currentParams = new URLSearchParams(query);
+  params.forEach((paramItem) => {
+    if (paramItem) {
+      currentParams.append(paramItem.param, paramItem.value);
+    }
+  });
+  const newParams = currentParams.toString();
+  return `?${newParams}`;
+};
 
 module.exports = {
   getBaseRpcOptions,
-  maybeAppendRegistryApiKey,
   sleep,
   handleApiRequestWithRetries,
   generateUriForHostAndPort,
+  updateQueryWithParam,
 };
