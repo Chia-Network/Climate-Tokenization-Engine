@@ -1,8 +1,9 @@
 const os = require("os");
 const express = require("express");
+const joiExpress = require("express-joi-validation");
 const { logger } = require("./logger");
 const CONFIG = require("./config");
-//const { tokenizeUnitSchema } = require("./validations");
+const { tokenizeUnitSchema } = require("./validations");
 
 const {
   tokenizeUnit,
@@ -24,6 +25,7 @@ const bodyParser = require("body-parser");
 const formData = require("express-form-data");
 
 const app = express();
+const validator = joiExpress.createValidator({ passError: true });
 
 // Middleware
 const options = {
@@ -42,7 +44,7 @@ app.use(addCadtApiKeyHeader);
 setupProxyMiddleware(app);
 
 // Routes
-app.post("/tokenize", tokenizeUnit);
+app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);
 app.post("/parse-detok-file", parseDetokFile);
 app.post("/confirm-detokanization", confirmDetokanization);
 

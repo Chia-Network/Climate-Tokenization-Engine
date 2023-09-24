@@ -3,6 +3,7 @@ const CONFIG = require("./config");
 const packageJson = require("../package.json");
 
 const logger = new Logger({
+  namespace: "carbon",
   projectName: "tokenization-engine",
   logLevel: CONFIG.GENERAL.LOG_LEVEL,
   packageVersion: packageJson.version,

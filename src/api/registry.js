@@ -1,6 +1,8 @@
 const superagent = require("superagent");
+const Datalayer = require("chia-datalayer");
 const CONFIG = require("../config");
 const { logger } = require("../logger");
+const wallet = require("../chia/wallet");
 
 const { generateUriForHostAndPort } = require("../utils");
 
@@ -28,7 +30,11 @@ const commitStagingData = async () => {
   const request = superagent.post(`${retirementExplorerUri}/v1/staging/commit`);
   setApiKeyHeader(request);
   await request;
+
   await new Promise((resolve) => setTimeout(resolve, 5000));
+  await wallet.waitForAllTransactionsToConfirm();
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  await waitForRegistryDataSync();
 };
 
 /**
@@ -111,7 +117,8 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
     `${retirementExplorerUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
   );
   setApiKeyHeader(request);
-  return await request;
+  const reponse = await request;
+  return reponse?.body;
 };
 
 /**
@@ -174,12 +181,33 @@ const getHomeOrg = async () => {
  * @returns {Promise<void>}
  */
 const setLastProcessedHeight = async (height) => {
+  await wallet.waitForAllTransactionsToConfirm();
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  await waitForRegistryDataSync();
+
   const request = superagent
     .post(`${retirementExplorerUri}/v1/organizations/metadata`)
     .send({ lastRetiredBlockHeight: height.toString() })
     .set("Content-Type", "application/json");
   setApiKeyHeader(request);
-  await request;
+  
+  const response = await request;
+
+  const data = response.body;
+
+  if (
+    response.status !== 200 ||
+    data.message !== "Home org currently being updated, will be completed soon."
+  ) {
+    logger.fatal(
+      `CRITICAL ERROR: Could not set last processed height in registry.`
+    );
+    return;
+  }
+
+  await wallet.waitForAllTransactionsToConfirm();
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  await waitForRegistryDataSync();
 };
 
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
@@ -341,6 +369,58 @@ const splitUnit = async ({
   }
 };
 
+async function waitForRegistryDataSync() {
+  await new Promise((resolve) => setTimeout(() => resolve(), 5000));
+
+  const dataLayerConfig = {};
+  if (CONFIG.DATA_LAYER_HOST) {
+    dataLayerConfig.datalayer_host = CONFIG.DATA_LAYER_HOST;
+  }
+  if (CONFIG.WALLET_HOST) {
+    dataLayerConfig.wallet_host = CONFIG.WALLET_HOST;
+  }
+  if (CONFIG.CERTIFICATE_FOLDER_PATH) {
+    dataLayerConfig.certificate_folder_path = CONFIG.CERTIFICATE_FOLDER_PATH;
+  }
+
+  const datalayer = new Datalayer(dataLayerConfig);
+  const homeOrg = await getHomeOrg();
+
+  const onChainRegistryRoot = await datalayer.getRoot({
+    id: homeOrg.registryId,
+  });
+
+  if (!onChainRegistryRoot.confirmed) {
+    console.log("Waiting for Registry root to confirm");
+    return waitForRegistryDataSync();
+  }
+
+  if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
+    console.log("Waiting for CADT to sync with latest regisry root.", {
+      onChainRoot: onChainRegistryRoot.hash,
+      homeOrgRegistryRoot: homeOrg.registryHash,
+    });
+    return waitForRegistryDataSync();
+  }
+
+  const onChainOrgRoot = await datalayer.getRoot({
+    id: homeOrg.orgUid,
+  });
+
+  if (!onChainOrgRoot.confirmed) {
+    console.log("Waiting for Organization root to confirm");
+    return waitForRegistryDataSync();
+  }
+
+  if (onChainOrgRoot.hash !== homeOrg.orgHash) {
+    console.log("Waiting for CADT to sync with latest organization root.", {
+      onChainRoot: onChainOrgRoot.hash,
+      homeOrgRoot: homeOrg.orgHash,
+    });
+    return waitForRegistryDataSync();
+  }
+}
+
 const deleteStagingData = async () => {
   console.log("Not implemented");
 };
@@ -362,4 +442,5 @@ module.exports = {
   getTokenizedUnitByAssetId,
   splitUnit,
   deleteStagingData,
+  waitForRegistryDataSync,
 };
