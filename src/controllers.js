@@ -1,19 +1,7 @@
-const superagent = require("superagent"); // Import the superagent library (if not already imported)
-const { hasUnconfirmedTransactions } = require("./chia/wallet");
 const { logger } = require("./logger");
-
-const {
-  sendParseDetokRequest,
-  confirmTokenCreationWithTransactionId,
-  confirmDetokanization: confirmDetokanizationDriver,
-} = require("./api/token-driver");
-
-const {
-  registerTokenCreationOnRegistry,
-  getTokenizedUnitByAssetId,
-  getOrgMetaData,
-  getProjectByWarehouseProjectId,
-} = require("./api/registry");
+const wallet = require("./chia/wallet");
+const tokenDriver = require("./api/token-driver");
+const registry = require("./api/registry");
 
 /**
  * Tokenizes a unit.
@@ -23,7 +11,7 @@ const {
  */
 const tokenizeUnit = async (req, res) => {
   try {
-    const hasPendingTransactions = await hasUnconfirmedTransactions(); // Missing local function
+    const hasPendingTransactions = await wallet.hasUnconfirmedTransactions();
 
     if (hasPendingTransactions) {
       return res.status(400).send({
@@ -32,7 +20,26 @@ const tokenizeUnit = async (req, res) => {
       });
     }
 
-    logger.info({
+    logger.info(
+      `Creating token: ${JSON.stringify(
+        {
+          token: {
+            org_uid: req.body.org_uid,
+            warehouse_project_id: req.body.warehouse_project_id,
+            vintage_year: req.body.vintage_year,
+            sequence_num: req.body.sequence_num,
+          },
+          payment: {
+            amount: (req.body.amount || 1) * 1000,
+            to_address: req.body.to_address,
+          },
+        },
+        2,
+        2
+      )}`
+    );
+
+    const data = await tokenDriver.createToken({
       token: {
         org_uid: req.body.org_uid,
         warehouse_project_id: req.body.warehouse_project_id,
@@ -44,24 +51,6 @@ const tokenizeUnit = async (req, res) => {
         to_address: req.body.to_address,
       },
     });
-
-    const response = await superagent
-      .post(`${CONFIG.CLIMATE_TOKENIZATION_CHIA_HOST}/v1/tokens`)
-      .send({
-        token: {
-          org_uid: req.body.org_uid,
-          warehouse_project_id: req.body.warehouse_project_id,
-          vintage_year: req.body.vintage_year,
-          sequence_num: req.body.sequence_num,
-        },
-        payment: {
-          amount: (req.body.amount || 1) * 1000,
-          to_address: req.body.to_address,
-        },
-      })
-      .set({ "Content-Type": "application/json" });
-
-    const data = response.body;
     const isTokenCreationPending = Boolean(data?.tx?.id);
 
     if (isTokenCreationPending) {
@@ -70,13 +59,16 @@ const tokenizeUnit = async (req, res) => {
       );
 
       const isTokenCreationConfirmed =
-        await confirmTokenCreationWithTransactionId(data.token, data.tx.id); // Missing local function
+        await tokenDriver.confirmTokenCreationWithTransactionId(
+          data.token,
+          data.tx.id
+        );
 
       if (isTokenCreationConfirmed) {
-        await registerTokenCreationOnRegistry(
+        await registry.registerTokenCreationOnRegistry(
           data.token,
           req.body.warehouseUnitId
-        ); // Missing local function
+        );
       } else {
         logger.info("Token creation could not be confirmed.");
       }
@@ -108,16 +100,17 @@ const parseDetokFile = async (req, res) => {
       throw new Error("Uploaded file not valid.");
     }
 
-    const parseDetokResponse = await sendParseDetokRequest(detokString); // Missing local function
+    const parseDetokResponse = await tokenDriver.sendParseDetokRequest(
+      detokString
+    );
     const isDetokParsed = Boolean(parseDetokResponse?.token?.asset_id);
     if (!isDetokParsed) {
       throw new Error("Could not parse detok file properly.");
     }
 
     const assetId = parseDetokResponse?.token?.asset_id;
-    const unitToBeDetokenizedResponse = await getTokenizedUnitByAssetId(
-      assetId
-    ); // Missing local function
+    const unitToBeDetokenizedResponse =
+      await registry.getTokenizedUnitByAssetId(assetId);
     let unitToBeDetokenized = JSON.parse(unitToBeDetokenizedResponse);
     if (unitToBeDetokenized.length) {
       unitToBeDetokenized = unitToBeDetokenized[0];
@@ -127,13 +120,13 @@ const parseDetokFile = async (req, res) => {
       unitToBeDetokenized.unitCount = parseDetokResponse?.payment?.amount;
     }
 
-    const project = await getProjectByWarehouseProjectId(
+    const project = await registry.getProjectByWarehouseProjectId(
       unitToBeDetokenized?.issuance?.warehouseProjectId
-    ); // Missing local function
+    );
 
     const orgUid = unitToBeDetokenized?.orgUid; // Missing local variable
 
-    const orgMetaData = await getOrgMetaData(orgUid); // Missing local function
+    const orgMetaData = await registry.getOrgMetaData(orgUid);
     const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
 
@@ -172,9 +165,8 @@ const confirmDetokanization = async (req, res) => {
   try {
     const confirmDetokanizationBody = _.cloneDeep(req.body);
 
-    const confirmDetokanizationResponse = await confirmDetokanizationDriver(
-      confirmDetokanizationBody
-    );
+    const confirmDetokanizationResponse =
+      await tokenDriver.confirmDetokanization(confirmDetokanizationBody);
 
     res.send(confirmDetokanizationResponse);
   } catch (error) {
@@ -203,16 +195,17 @@ const processDetokFile = async (req, res) => {
       throw new Error("Uploaded file not valid.");
     }
 
-    const parseDetokResponse = await sendParseDetokRequest(detokString);
+    const parseDetokResponse = await tokenDriver.sendParseDetokRequest(
+      detokString
+    );
     const isDetokParsed = Boolean(parseDetokResponse?.token?.asset_id);
     if (!isDetokParsed) {
       throw new Error("Could not parse detok file properly.");
     }
 
     const assetId = parseDetokResponse?.token?.asset_id;
-    const unitToBeDetokenizedResponse = await getTokenizedUnitByAssetId(
-      assetId
-    );
+    const unitToBeDetokenizedResponse =
+      await registry.getTokenizedUnitByAssetId(assetId);
     let unitToBeDetokenized = JSON.parse(unitToBeDetokenizedResponse);
 
     if (unitToBeDetokenized.length) {
@@ -223,11 +216,11 @@ const processDetokFile = async (req, res) => {
       unitToBeDetokenized.unitCount = parseDetokResponse?.payment?.amount;
     }
 
-    const project = await getProjectByWarehouseProjectId(
+    const project = await registry.getProjectByWarehouseProjectId(
       unitToBeDetokenized?.issuance?.warehouseProjectId
     );
     const orgUid = unitToBeDetokenized?.orgUid;
-    const orgMetaData = await getOrgMetaData(orgUid);
+    const orgMetaData = await registry.getOrgMetaData(orgUid);
     const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
 
@@ -262,9 +255,8 @@ const processDetokFile = async (req, res) => {
  */
 const confirmDetokProcess = async (req, res) => {
   try {
-    const confirmDetokanizationResponse = await confirmDetokanizationDriver(
-      req.body
-    );
+    const confirmDetokanizationResponse =
+      await tokenDriver.confirmDetokanization(req.body);
     res.send(confirmDetokanizationResponse);
   } catch (error) {
     res.status(400).json({

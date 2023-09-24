@@ -30,7 +30,7 @@ const sendParseDetokRequest = async (detokString) => {
   } catch (error) {
     throw new Error(`Detokenize api could not process request: ${error}`);
   }
-}
+};
 
 /**
  * Confirms if the token creation has been completed with a given transaction ID.
@@ -74,20 +74,20 @@ const confirmTokenCreationWithTransactionId = async (
 
 /**
  * Confirms if detokenization has been completed.
- * @param {Object} requestBody - The body of the request containing details for confirmation
+ * @param {Object} payload - The body of the request containing details for confirmation
  * @returns {Promise<Object>} - A promise that resolves to an object containing the confirmation response.
  */
-const confirmDetokanization = async (requestBody) => {
+const confirmDetokanization = async (payload) => {
   try {
-    const assetId = requestBody?.token?.asset_id;
-    if (requestBody.unit) {
-      delete requestBody.unit;
+    const assetId = payload?.token?.asset_id;
+    if (payload.unit) {
+      delete payload.unit;
     }
 
     return handleApiRequestWithRetries(async () => {
       return await superagent
         .put(`${tokenDriverUri}/v1/tokens/${assetId}/detokenize`)
-        .send(requestBody)
+        .send(payload)
         .set({ "Content-Type": "application/json" });
     });
   } catch (error) {
@@ -95,8 +95,18 @@ const confirmDetokanization = async (requestBody) => {
   }
 };
 
+const createToken = async (payload) => {
+  const response = await superagent
+    .post(`${tokenDriverUri}/v1/tokens`)
+    .send(payload)
+    .set({ "Content-Type": "application/json" });
+
+  return response?.data;
+};
+
 module.exports = {
   sendParseDetokRequest,
   confirmTokenCreationWithTransactionId,
   confirmDetokanization,
+  createToken,
 };
