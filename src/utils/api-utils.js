@@ -55,18 +55,6 @@ const getBaseRpcOptions = () => {
 };
 
 /**
- * Adds CADT API Key to the request headers if available.
- * @param {Object} headers - Optional headers to extend
- * @returns {Object} Headers with CADT API Key added if available
- */
-const addCadtApiKeyHeader = (headers = {}) => {
-  if (CONFIG.REGISTRY.API_KEY) {
-    headers["x-api-key"] = CONFIG.REGISTRY.API_KEY;
-  }
-  return headers;
-};
-
-/**
  * Sleeps for the given time in milliseconds.
  * @param {number} ms - Time in milliseconds to sleep
  * @returns {Promise<void>} A promise that resolves after the specified time
@@ -115,7 +103,7 @@ function generateUriForHostAndPort(protocol, host, port) {
 
 module.exports = {
   getBaseRpcOptions,
-  addCadtApiKeyHeader,
+  maybeAppendRegistryApiKey,
   sleep,
   handleApiRequestWithRetries,
   generateUriForHostAndPort,

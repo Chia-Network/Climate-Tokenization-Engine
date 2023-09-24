@@ -16,7 +16,7 @@ const {
   setOrgUidHeader,
   setOptionalRegistryApiKey,
   assertHomeOrgExists,
-  addCadtApiKeyHeader,
+  maybeAppendRegistryApiKey,
 } = require("./middleware");
 
 const scheduler = require("./tasks");
@@ -39,7 +39,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(assertHomeOrgExists);
 app.use(setOrgUidHeader);
 app.use(setOptionalRegistryApiKey);
-app.use(addCadtApiKeyHeader);
 
 setupProxyMiddleware(app);
 

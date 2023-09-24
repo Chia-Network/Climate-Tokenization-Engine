@@ -80,25 +80,9 @@ const assertHomeOrgExists = async (req, res, next) => {
   }
 };
 
-/**
- * If an API key for the Climate Action Data Trust (CADT) is set in the server configuration, add the API key value to
- * the headers that are sent with a request to the CADT. This function mutates the header object passed in and returns
- * the object for convenience. If no headers are passed to this function, a new dictionary containing just the CADT API
- * key (or an empty dictionary, if the API key is not set) is created and returned. If CONFIG.REGISTRY.API_KEY is not set in the
- * configuration, the header object will not be modified.
- */
-const addCadtApiKeyHeader = (headers = {}) => {
-  if (CONFIG.REGISTRY.API_KEY) {
-    headers["x-api-key"] = CONFIG.REGISTRY.API_KEY;
-  }
-
-  return headers;
-};
-
 module.exports = {
   errorHandler,
   setOrgUidHeader,
   setOptionalRegistryApiKey,
-  assertHomeOrgExists,
-  addCadtApiKeyHeader,
+  assertHomeOrgExists
 };

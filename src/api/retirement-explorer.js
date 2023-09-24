@@ -11,6 +11,18 @@ const retirementExplorerUri = generateUriForHostAndPort(
 );
 
 /**
+ * Adds Retirement Explorer API Key to the request headers if available.
+ * @param {Object} headers - Optional headers to extend
+ * @returns {Object} Headers with API Key added if available
+ */
+const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
+  if (CONFIG.RETIREMENT_EXPLORER.API_KEY) {
+    headers["x-api-key"] = CONFIG.RETIREMENT_EXPLORER.API_KEY;
+  }
+  return headers;
+};
+
+/**
  * Function to get retirement activities from the explorer API.
  *
  * @param {number} page - Page number.
@@ -28,6 +40,7 @@ const getRetirementActivities = async (page, limit, minHeight) => {
         minHeight: Number(minHeight) + 1,
         sort: "asc",
       })
+      .set(maybeAppendRetirementExplorerApiKey())
       .timeout({ response: 300000, deadline: 600000 });
 
     return response.body?.activities || [];

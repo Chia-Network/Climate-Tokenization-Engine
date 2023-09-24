@@ -6,20 +6,22 @@ const wallet = require("../chia/wallet");
 
 const { generateUriForHostAndPort } = require("../utils");
 
-const retirementExplorerUri = generateUriForHostAndPort(
+const registryUri = generateUriForHostAndPort(
   CONFIG.REGISTRY.PROTOCOL,
   CONFIG.REGISTRY.HOST,
   CONFIG.REGISTRY.PORT
 );
 
 /**
- * Helper function to set API key header
- * @param {superagent.Request} request
+ * Adds Registry API Key to the request headers if available.
+ * @param {Object} headers - Optional headers to extend
+ * @returns {Object} Headers with API Key added if available
  */
-const setApiKeyHeader = (request) => {
+const maybeAppendRegistryApiKey = (headers = {}) => {
   if (CONFIG.REGISTRY.API_KEY) {
-    request.set("x-api-key", CONFIG.REGISTRY.API_KEY);
+    headers["x-api-key"] = CONFIG.REGISTRY.API_KEY;
   }
+  return headers;
 };
 
 /**
@@ -27,9 +29,9 @@ const setApiKeyHeader = (request) => {
  * @returns {Promise<void>}
  */
 const commitStagingData = async () => {
-  const request = superagent.post(`${retirementExplorerUri}/v1/staging/commit`);
-  setApiKeyHeader(request);
-  await request;
+  const request = await superagent
+    .post(`${registryUri}/v1/staging/commit`)
+    .set(maybeAppendRegistryApiKey());
 
   await new Promise((resolve) => setTimeout(resolve, 5000));
   await wallet.waitForAllTransactionsToConfirm();
@@ -59,33 +61,16 @@ const cleanUnitBeforeUpdating = (unit) => {
 };
 
 /**
- * Insert a unit.
- * @param {object} unit
- * @returns {Promise<void>}
- */
-const insertUnit = async (unit) => {
-  delete unit.warehouseUnitId;
-  const request = superagent
-    .post(`${CADT_API_SERVER_HOST}/v1/units`)
-    .send(unit)
-    .set("Content-Type", "application/json");
-  setApiKeyHeader(request);
-  await request;
-};
-
-/**
  * Update a given unit.
  * @param {object} unit
  * @returns {Promise<void>}
  */
 const updateUnit = async (unit) => {
   const cleanedUnit = cleanUnitBeforeUpdating(unit);
-  const request = superagent
-    .put(`${retirementExplorerUri}/v1/units`)
+  const request = await superagent
+    .put(`${registryUri}/v1/units`)
     .send(cleanedUnit)
-    .set("Content-Type", "application/json");
-  setApiKeyHeader(request);
-  await request;
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 };
 
 /**
@@ -113,12 +98,13 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  * @returns {Promise<superagent.Response>}
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
-  const request = superagent.get(
-    `${retirementExplorerUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
-  );
-  setApiKeyHeader(request);
-  const reponse = await request;
-  return reponse?.body;
+  const response = await superagent
+    .get(
+      `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+    )
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  
+    return response?.body;
 };
 
 /**
@@ -129,10 +115,9 @@ const getLastProcessedHeight = async () => {
   try {
     const homeOrgUid = await getHomeOrgUid();
     const response = await superagent
-      .get(`${retirementExplorerUri}/v1/organizations/metadata`)
-      .query({ orgUid: homeOrgUid });
-
-    setApiKeyHeader(response);
+      .get(`${registryUri}/v1/organizations/metadata`)
+      .query({ orgUid: homeOrgUid })
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     return response.status === 200
       ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
@@ -157,9 +142,9 @@ const getHomeOrgUid = async () => {
  */
 const getHomeOrg = async () => {
   try {
-    const request = superagent.get(`${retirementExplorerUri}/v1/organizations`);
-    setApiKeyHeader(request);
-    const response = await request;
+    const response = await superagent
+      .get(`${registryUri}/v1/organizations`)
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     if (response.status !== 200) {
       throw new Error(`Received non-200 status code: ${response.status}`);
@@ -185,13 +170,10 @@ const setLastProcessedHeight = async (height) => {
   await new Promise((resolve) => setTimeout(resolve, 5000));
   await waitForRegistryDataSync();
 
-  const request = superagent
-    .post(`${retirementExplorerUri}/v1/organizations/metadata`)
+  const response = await superagent
+    .post(`${registryUri}/v1/organizations/metadata`)
     .send({ lastRetiredBlockHeight: height.toString() })
-    .set("Content-Type", "application/json");
-  setApiKeyHeader(request);
-  
-  const response = await request;
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
   const data = response.body;
 
@@ -212,6 +194,11 @@ const setLastProcessedHeight = async (height) => {
 
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
+    await waitForRegistryDataSync();
+
+    // When running in core registry mode, we don't want to be able to detokenize
+    // We need to delete the detokenization object from the token
+    // but because of validation, we need to replace it empty strings
     if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
       token.detokenization = {
         mod_hash: "",
@@ -221,9 +208,9 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
     }
 
     const response = await superagent
-      .post(`${retirementExplorerUri}/v1/organizations/metadata`)
+      .post(`${registryUri}/v1/organizations/metadata`)
       .send({ [token.asset_id]: JSON.stringify(token) })
-      .set(addCadtApiKeyHeader({ "Content-Type": "application/json" }));
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     const data = response.body;
 
@@ -258,8 +245,10 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
  */
 async function getOrgMetaData(orgUid) {
   try {
-    const url = `${retirementExplorerUri}/v1/organizations/metadata?orgUid=${orgUid}`;
-    const response = await superagent.get(url).set(addCadtApiKeyHeader());
+    const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const response = await superagent
+      .get(url)
+      .set(maybeAppendRegistryApiKey());
     return response.body;
   } catch (error) {
     logger.error(`Could not get org meta data: ${error.message}`);
@@ -276,8 +265,8 @@ async function getOrgMetaData(orgUid) {
  */
 async function getProjectByWarehouseProjectId(warehouseProjectId) {
   try {
-    const url = `${retirementExplorerUri}/v1/projects?projectIds=${warehouseProjectId}`;
-    const response = await superagent.get(url).set(addCadtApiKeyHeader());
+    const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
+    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
     return response.body[0];
   } catch (error) {
     logger.error(`Could not get corresponding project data: ${error.message}`);
@@ -294,8 +283,8 @@ async function getProjectByWarehouseProjectId(warehouseProjectId) {
  */
 async function getTokenizedUnitByAssetId(assetId) {
   try {
-    const url = `${retirementExplorerUri}/v1/units?marketplaceIdentifiers=${assetId}`;
-    const response = await superagent.get(url).set(addCadtApiKeyHeader());
+    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
     return response.body;
   } catch (error) {
     logger.error(`Could not get tokenized unit by asset id. ${error.message}`);
@@ -355,9 +344,9 @@ const splitUnit = async ({
 
   try {
     const request = superagent
-      .post(`${retirementExplorerUri}/v1/units/split`)
+      .post(`${registryUri}/v1/units/split`)
       .send(JSON.stringify(dataToBeSubmitted))
-      .set("Content-Type", "application/json");
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     if (CONFIG.REGISTRY.API_KEY) {
       request.set("x-api-key", CONFIG.REGISTRY.API_KEY);
@@ -428,7 +417,6 @@ const deleteStagingData = async () => {
 module.exports = {
   commitStagingData,
   cleanUnitBeforeUpdating,
-  insertUnit,
   updateUnit,
   retireUnit,
   getAssetUnitBlocks,

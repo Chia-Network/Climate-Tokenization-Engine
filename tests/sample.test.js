@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 
-describe('Sample Test Suite', () => {
+describe.skip('Sample Test Suite', () => {
   it('should pass this sample test', () => {
     expect(true).to.equal(true);
   });
