@@ -16,12 +16,12 @@ const tokenizeUnit = async (req, res) => {
 
     if (hasPendingTransactions) {
       return res.status(400).send({
-        success: false,
         message: "Please wait for all transactions to confirm.",
+        success: false,
       });
     }
 
-    const data = await tokenDriver.createToken({
+    const tokenizationBody = {
       token: {
         org_uid: req.body.org_uid,
         warehouse_project_id: req.body.warehouse_project_id,
@@ -32,27 +32,33 @@ const tokenizeUnit = async (req, res) => {
         amount: (req.body.amount || 1) * 1000,
         to_address: req.body.to_address,
       },
-    });
+    };
+
+    // TODO: Create a JSDoc for this response
+    const data = await tokenDriver.createToken(tokenizationBody);
+
     const isTokenCreationPending = Boolean(data?.tx?.id);
 
     if (isTokenCreationPending) {
-      res.send(
-        "Your token is being created and should be ready in a few minutes."
-      );
+      res.send({
+        message:
+          "Your token is being created and should be ready in a few minutes.",
+        success: true,
+      });
 
-      const isTokenCreationConfirmed =
-        await tokenDriver.confirmTokenCreationWithTransactionId(
+      const tokenConfirmedOnChain =
+        await tokenDriver.waitForTokenizationTransactionConfirmation(
           data.token,
           data.tx.id
         );
 
-      if (isTokenCreationConfirmed) {
+      if (tokenConfirmedOnChain) {
         await registry.registerTokenCreationOnRegistry(
           data.token,
           req.body.warehouseUnitId
         );
       } else {
-        logger.info("Token creation could not be confirmed.");
+        logger.error("Token creation could not be confirmed.");
       }
     } else {
       throw new Error(data.error);
@@ -61,6 +67,7 @@ const tokenizeUnit = async (req, res) => {
     res.status(400).json({
       message: "Error token could not be created",
       error: error.message,
+      success: false
     });
     logger.error(`Error tokenizing: ${error.message}`);
   }
@@ -132,6 +139,7 @@ const parseDetokFile = async (req, res) => {
     res.status(400).json({
       message: "File could not be detokenized.",
       error: error.message,
+      success: false
     });
     logger.error(`File could not be detokenized: ${error.message}`);
   }
@@ -155,6 +163,7 @@ const confirmDetokanization = async (req, res) => {
     res.status(400).json({
       message: "Detokanization could not be confirmed",
       error: error.message,
+      success: false,
     });
     logger.error(`Detokanization could not be confirmed: ${error.message}`);
   }
@@ -224,6 +233,7 @@ const processDetokFile = async (req, res) => {
     res.status(400).json({
       message: "File could not be detokenized.",
       error: error.message,
+      success: false,
     });
     logger.error(`File could not be detokenized: ${error.message}`);
   }
@@ -244,6 +254,7 @@ const confirmDetokProcess = async (req, res) => {
     res.status(400).json({
       message: "Detokanization could not be confirmed.",
       error: error.message,
+      success: false,
     });
     logger.error(`Detokanization could not be confirmed: ${error.message}`);
   }

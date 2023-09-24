@@ -1,6 +1,6 @@
 const superagent = require("superagent");
 const https = require("https");
-const { getBaseRpcOptions } = require("../utils/api-utils");
+const { getBaseRpcOptions } = require("./rpc");
 const CONFIG = require('../config');
 
 const { WALLET_HOST } = CONFIG.CHIA;

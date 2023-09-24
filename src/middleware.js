@@ -20,6 +20,7 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({
       message: "Data Validation error",
       errors: errorString,
+      success: false,
     });
   }
 
@@ -65,10 +66,7 @@ const assertHomeOrgExists = async (req, res, next) => {
     const homeOrgUid = await getHomeOrgUid();
 
     if (homeOrgUid === null) {
-      logger.error(
-        "CADT does not contain valid HOME_ORG please create one to use this software"
-      );
-      throw new Error("Home Org does not exist.");
+      throw new Error("The connected registry does not have a valid Home Org. Please create one to use this software.");
     }
 
     next();
@@ -76,6 +74,7 @@ const assertHomeOrgExists = async (req, res, next) => {
     res.status(400).json({
       message: "Chia Exception",
       error: err.message,
+      success: false,
     });
   }
 };

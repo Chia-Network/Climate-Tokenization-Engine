@@ -4,7 +4,7 @@ const CONFIG = require("../config");
 
 const {
   generateUriForHostAndPort,
-  sleep,
+  waitFor,
   handleApiRequestWithRetries,
 } = require("../utils");
 
@@ -46,43 +46,44 @@ const sendParseDetokRequest = async (detokString) => {
 };
 
 /**
- * Confirms if the token creation has been completed with a given transaction ID.
- * @param {string} token - The token
+ * Waits for confirmation of token creation.
+ *
+ * @param {string} token - The token to confirm
  * @param {string} transactionId - The transaction ID
- * @param {number} retry - The current retry count (initially 0)
- * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether token creation is confirmed.
+ * @param {number} [retry=0] - The retry count
+ * @returns {Promise<boolean>} True if confirmed, false otherwise
  */
-const confirmTokenCreationWithTransactionId = async (
+const waitForTokenizationTransactionConfirmation = async (
   token,
   transactionId,
   retry = 0
 ) => {
-  if (retry <= 60) {
-    try {
-      await sleep(30000);
-      const response = await superagent
-        .get(`${tokenDriverUri}/v1/transactions/${transactionId}`)
-        .set(maybeAppendTokenDriverApiKey());
-      const isTokenCreationConfirmed = response.body?.record?.confirmed;
-
-      if (isTokenCreationConfirmed) {
-        return true;
-      } else {
-        await sleep(30000);
-        return confirmTokenCreationWithTransactionId(
-          token,
-          transactionId,
-          retry + 1
-        );
-      }
-    } catch (error) {
-      logger.error(
-        `Error confirming token creation with transaction ID ${transactionId}: ${error.message}`
-      );
-      return false;
-    }
+  if (retry > 60) {
+    return false;
   }
-  return false;
+
+  try {
+    await waitFor(30000);
+    const response = await superagent
+      .get(`${tokenDriverUri}/v1/transactions/${transactionId}`)
+      .set(maybeAppendTokenDriverApiKey());
+
+    if (response.body?.record?.confirmed) {
+      return true;
+    }
+
+    await waitFor(30000);
+    return waitForTokenizationTransactionConfirmation(
+      token,
+      transactionId,
+      retry + 1
+    );
+  } catch (error) {
+    logger.error(
+      `Error confirming token creation: ${transactionId}, ${error.message}`
+    );
+    return false;
+  }
 };
 
 /**
@@ -101,7 +102,9 @@ const confirmDetokanization = async (payload) => {
       return await superagent
         .put(`${tokenDriverUri}/v1/tokens/${assetId}/detokenize`)
         .send(payload)
-        .set(maybeAppendTokenDriverApiKey({ "Content-Type": "application/json" }));
+        .set(
+          maybeAppendTokenDriverApiKey({ "Content-Type": "application/json" })
+        );
     });
   } catch (error) {
     throw new Error(`Detokenization could not be confirmed: ${error.message}`);
@@ -126,7 +129,7 @@ const createToken = async (tokenizationBody) => {
 
 module.exports = {
   sendParseDetokRequest,
-  confirmTokenCreationWithTransactionId,
+  waitForTokenizationTransactionConfirmation,
   confirmDetokanization,
   createToken,
 };
