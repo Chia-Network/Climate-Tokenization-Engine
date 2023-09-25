@@ -36,6 +36,7 @@ const job = new SimpleIntervalJob(
     runImmediately: true,
   },
   task,
+  // @ts-ignore
   "sync-retirements"
 );
 
@@ -152,8 +153,7 @@ const processResult = async ({
     await registry.commitStagingData();
     logger.task("Auto Retirement Process Complete");
   } catch (err) {
-    console.trace(err);
-    throw new Error("Could not retire unit block", err);
+    throw new Error("Could not retire unit block");
   }
 };
 
@@ -163,7 +163,7 @@ const processResult = async ({
  * @param {number} amount - Amount to retire.
  * @param {string} beneficiaryName - Beneficiary's name.
  * @param {string} beneficiaryAddress - Beneficiary's address.
- * @returns {Promise<void>}
+ * @returns {Promise<number>}
  */
 const processUnits = async (
   units,

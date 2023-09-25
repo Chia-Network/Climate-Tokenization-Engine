@@ -3,7 +3,11 @@ const Datalayer = require("chia-datalayer");
 const CONFIG = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
-const { generateUriForHostAndPort } = require("../utils");
+const {
+  generateUriForHostAndPort,
+  waitFor,
+  parseSerialNumber,
+} = require("../utils");
 
 const registryUri = generateUriForHostAndPort(
   CONFIG.REGISTRY.PROTOCOL,
@@ -34,10 +38,10 @@ const commitStagingData = async () => {
     .post(`${registryUri}/v1/staging/commit`)
     .set(maybeAppendRegistryApiKey());
 
-  await new Promise(resolve => setTimeout(resolve, 5000)),
-  await wallet.waitForAllTransactionsToConfirm(),
-  await new Promise(resolve => setTimeout(resolve, 5000)),
-  await waitForRegistryDataSync()
+  await waitFor(5000);
+  await wallet.waitForAllTransactionsToConfirm();
+  await waitFor(5000);
+  await waitForRegistryDataSync();
 
   return response.body;
 };
@@ -50,11 +54,13 @@ const commitStagingData = async () => {
  */
 const cleanUnitBeforeUpdating = (unit) => {
   const cleanedUnit = { ...unit };
-  ['issuance?.orgUid', 'issuanceId', 'orgUid', 'serialNumberBlock'].forEach(key => {
-    delete cleanedUnit[key];
-  });
+  ["issuance?.orgUid", "issuanceId", "orgUid", "serialNumberBlock"].forEach(
+    (key) => {
+      delete cleanedUnit[key];
+    }
+  );
 
-  Object.keys(cleanedUnit).forEach(key => {
+  Object.keys(cleanedUnit).forEach((key) => {
     if (cleanedUnit[key] === null) {
       delete cleanedUnit[key];
     }
@@ -107,7 +113,9 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   const response = await superagent
-    .get(`${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`)
+    .get(
+      `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+    )
     .set(maybeAppendRegistryApiKey());
 
   return response?.body;
@@ -159,8 +167,10 @@ const getHomeOrg = async () => {
       throw new Error(`Received non-200 status code: ${response.status}`);
     }
 
-    const orgArray = Object.keys(response.body).map(key => response.body[key]);
-    return orgArray.find(org => org.isHome) || null;
+    const orgArray = Object.keys(response.body).map(
+      (key) => response.body[key]
+    );
+    return orgArray.find((org) => org.isHome) || null;
   } catch (error) {
     return null;
   }
@@ -173,9 +183,9 @@ const getHomeOrg = async () => {
  * @returns {Promise<Object>} The response body
  */
 const setLastProcessedHeight = async (height) => {
-  await wallet.waitForAllTransactionsToConfirm(),
-  await new Promise(resolve => setTimeout(resolve, 5000)),
-  await waitForRegistryDataSync()
+  await wallet.waitForAllTransactionsToConfirm();
+  await waitFor(5000);
+  await waitForRegistryDataSync();
 
   const response = await superagent
     .post(`${registryUri}/v1/organizations/metadata`)
@@ -184,14 +194,19 @@ const setLastProcessedHeight = async (height) => {
 
   const data = response.body;
 
-  if (response.status !== 200 || data.message !== "Home org currently being updated, will be completed soon.") {
-    logger.fatal(`CRITICAL ERROR: Could not set last processed height in registry.`);
+  if (
+    response.status !== 200 ||
+    data.message !== "Home org currently being updated, will be completed soon."
+  ) {
+    logger.fatal(
+      `CRITICAL ERROR: Could not set last processed height in registry.`
+    );
     return;
   }
 
-  await wallet.waitForAllTransactionsToConfirm(),
-  await new Promise(resolve => setTimeout(resolve, 5000)),
-  await waitForRegistryDataSync()
+  await wallet.waitForAllTransactionsToConfirm();
+  await waitFor(5000);
+  await waitForRegistryDataSync();
 
   return data;
 };
@@ -206,7 +221,7 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   if (retry > 60) return false;
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 30000));
+    await new Promise((resolve) => setTimeout(resolve, 30000));
     const response = await superagent
       .get(`${registryUri}/v1/staging/hasPendingTransactions`)
       .set(maybeAppendRegistryApiKey());
@@ -214,10 +229,12 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
     const thereAreNoPendingTransactions = response.body?.confirmed;
     if (thereAreNoPendingTransactions) return true;
 
-    await new Promise(resolve => setTimeout(resolve, 30000));
+    await new Promise((resolve) => setTimeout(resolve, 30000));
     return confirmTokenRegistrationOnWarehouse(retry + 1);
   } catch (error) {
-    logger.error(`Error confirming token registration on warehouse: ${error.message}`);
+    logger.error(
+      `Error confirming token registration on warehouse: ${error.message}`
+    );
     return false;
   }
 };
@@ -244,11 +261,17 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
     const data = response.body;
-    if (data.message === "Home org currently being updated, will be completed soon.") {
+    if (
+      data.message ===
+      "Home org currently being updated, will be completed soon."
+    ) {
       const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
 
       if (isTokenRegistered && CONFIG.GENERAL.CORE_REGISTRY_MODE) {
-        await updateUnitMarketplaceIdentifierWithAssetId(warehouseUnitId, token.asset_id);
+        await updateUnitMarketplaceIdentifierWithAssetId(
+          warehouseUnitId,
+          token.asset_id
+        );
       }
 
       return response.body;
@@ -256,7 +279,9 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       logger.error("Could not register token creation in registry.");
     }
   } catch (error) {
-    logger.error(`Could not register token creation in registry: ${error.message}`);
+    logger.error(
+      `Could not register token creation in registry: ${error.message}`
+    );
   }
 };
 
@@ -266,7 +291,10 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
  * @param {string} warehouseUnitId - The warehouse unit ID
  * @param {string} asset_id - The asset ID
  */
-const updateUnitMarketplaceIdentifierWithAssetId = async (warehouseUnitId, asset_id) => {
+const updateUnitMarketplaceIdentifierWithAssetId = async (
+  warehouseUnitId,
+  asset_id
+) => {
   try {
     const unitToBeUpdatedResponse = await superagent
       .get(`${registryUri}/v1/units`)
@@ -277,11 +305,19 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (warehouseUnitId, asset
     unitToBeUpdated.marketplaceIdentifier = asset_id;
     unitToBeUpdated.marketplace = "Tokenized on Chia";
 
-    ['issuance?.orgUid', 'issuanceId', 'orgUid', 'serialNumberBlock', 'unitCount', 'unitBlockStart', 'unitBlockEnd'].forEach(key => {
+    [
+      "issuance?.orgUid",
+      "issuanceId",
+      "orgUid",
+      "serialNumberBlock",
+      "unitCount",
+      "unitBlockStart",
+      "unitBlockEnd",
+    ].forEach((key) => {
       delete unitToBeUpdated[key];
     });
 
-    Object.keys(unitToBeUpdated).forEach(key => {
+    Object.keys(unitToBeUpdated).forEach((key) => {
       if (unitToBeUpdated[key] === null) {
         delete unitToBeUpdated[key];
       }
@@ -292,7 +328,9 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (warehouseUnitId, asset
       .send(unitToBeUpdated)
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
   } catch (error) {
-    logger.error(`Could not update unit marketplace identifier with asset id: ${error.message}`);
+    logger.error(
+      `Could not update unit marketplace identifier with asset id: ${error.message}`
+    );
   }
 };
 
@@ -314,23 +352,38 @@ const getOrgMetaData = async (orgUid) => {
  * @returns {Promise<void>}
  */
 const waitForRegistryDataSync = async () => {
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await waitFor(5000);
   const dataLayerConfig = {};
 
-  if (CONFIG.DATA_LAYER_HOST) {
-    dataLayerConfig.datalayer_host = CONFIG.DATA_LAYER_HOST;
+  if (CONFIG.CHIA.DATA_LAYER_HOST) {
+    dataLayerConfig.datalayer_host = CONFIG.CHIA.DATA_LAYER_HOST;
   }
-  if (CONFIG.WALLET_HOST) {
-    dataLayerConfig.wallet_host = CONFIG.WALLET_HOST;
+
+  if (CONFIG.CHIA.WALLET_HOST) {
+    dataLayerConfig.wallet_host = CONFIG.CHIA.WALLET_HOST;
   }
-  if (CONFIG.CERTIFICATE_FOLDER_PATH) {
-    dataLayerConfig.certificate_folder_path = CONFIG.CERTIFICATE_FOLDER_PATH;
+
+  if (CONFIG.CHIA.CERTIFICATE_FOLDER_PATH) {
+    dataLayerConfig.certificate_folder_path =
+      CONFIG.CHIA.CERTIFICATE_FOLDER_PATH;
+  }
+
+  if (CONFIG.CHIA.ALLOW_SELF_SIGNED_CERTIFICATES) {
+    dataLayerConfig.allowUnverifiedCert =
+      CONFIG.CHIA.ALLOW_SELF_SIGNED_CERTIFICATES;
   }
 
   const datalayer = new Datalayer(dataLayerConfig);
   const homeOrg = await getHomeOrg();
 
-  const onChainRegistryRoot = await datalayer.getRoot({ id: homeOrg.registryId });
+  if (!homeOrg) {
+    logger.warn("Can not find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization.");
+    return waitForRegistryDataSync();
+  }
+
+  const onChainRegistryRoot = await datalayer.getRoot({
+    id: homeOrg.registryId,
+  });
 
   if (!onChainRegistryRoot.confirmed) {
     console.log("Waiting for Registry root to confirm");
@@ -338,7 +391,7 @@ const waitForRegistryDataSync = async () => {
   }
 
   if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-    console.log("Waiting for CADT to sync with latest regisry root.", {
+    console.log("Waiting for Registry to sync with latest regisry root.", {
       onChainRoot: onChainRegistryRoot.hash,
       homeOrgRegistryRoot: homeOrg.registryHash,
     });
@@ -353,7 +406,7 @@ const waitForRegistryDataSync = async () => {
   }
 
   if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-    console.log("Waiting for CADT to sync with latest organization root.", {
+    console.log("Waiting for Registry to sync with latest organization root.", {
       onChainRoot: onChainOrgRoot.hash,
       homeOrgRoot: homeOrg.orgHash,
     });
@@ -395,12 +448,73 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   }
 };
 
-
 /**
  * Placeholder function for deleting staging data.
  */
 const deleteStagingData = async () => {
   console.log("Not implemented");
+};
+
+const splitUnit = async ({
+  unit,
+  amount,
+  beneficiaryName,
+  beneficiaryAddress,
+}) => {
+  console.log(
+    "Splitting unit",
+    JSON.stringify({
+      amount,
+      beneficiaryName,
+      beneficiaryAddress,
+    })
+  );
+
+  // Parse the serialNumberBlock
+  const { unitBlockStart, unitBlockEnd } = parseSerialNumber(
+    unit.serialNumberBlock
+  );
+
+  if (!unitBlockStart && !unitBlockEnd) {
+    console.error("serialNumberBlock is not in the correct format");
+    return;
+  }
+
+  const totalUnits = parseInt(unitBlockEnd) - parseInt(unitBlockStart) + 1;
+
+  if (amount >= totalUnits) {
+    throw new Error("Amount must be less than total units in the block");
+  }
+
+  const payload = {
+    warehouseUnitId: unit.warehouseUnitId,
+    records: [
+      {
+        unitCount: amount,
+        marketplace: unit.marketplace,
+        marketplaceIdentifier: unit.marketplaceIdentifier,
+        unitStatus: "Retired",
+        unitOwner: beneficiaryName,
+        unitStatusReason: beneficiaryAddress,
+      },
+      {
+        unitCount: totalUnits - amount,
+        marketplace: unit.marketplace,
+        marketplaceIdentifier: unit.marketplaceIdentifier,
+      },
+    ],
+  };
+
+  try {
+    const response = await superagent
+      .post(`${registryUri}/v1/units/split`)
+      .send(JSON.stringify(payload))
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+
+    return response.body;
+  } catch (error) {
+    throw new Error(`Could not split unit on registry: ${error}`);
+  }
 };
 
 module.exports = {
@@ -418,4 +532,6 @@ module.exports = {
   deleteStagingData,
   getTokenizedUnitByAssetId,
   getProjectByWarehouseProjectId,
+  splitUnit,
+  waitForRegistryDataSync,
 };

@@ -5,8 +5,10 @@
     "LOG_RETENTION_DAYS": "30"
   },
   "CHIA": {
+    "DATALAYER_HOST": "https://localhost:8562",
     "WALLET_HOST": "https://localhost:9256",
-    "CERTIFICATE_FOLDER_PATH": null
+    "CERTIFICATE_FOLDER_PATH": null,
+    "ALLOW_SELF_SIGNED_CERTIFICATES": true
   },
   "REGISTRY": {
     "PROTOCOL": "http",

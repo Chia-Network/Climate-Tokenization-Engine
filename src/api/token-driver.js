@@ -124,6 +124,8 @@ const createToken = async (tokenizationBody) => {
     .send(tokenizationBody)
     .set(maybeAppendTokenDriverApiKey({ "Content-Type": "application/json" }));
 
+  logger.debug(`Token creation response: ${JSON.stringify(response.body)}`);
+
   return response?.data;
 };
 

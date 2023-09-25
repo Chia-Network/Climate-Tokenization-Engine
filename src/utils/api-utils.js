@@ -37,6 +37,13 @@ function generateUriForHostAndPort(protocol, host, port) {
   return hostUri;
 }
 
+/**
+ * Updates a URL query string by appending additional parameters.
+ * 
+ * @param {string} query - The existing query string (e.g., "?name=John")
+ * @param {...Object} params - One or more objects representing the parameters to add
+ * @returns {string} - The updated query string
+ */
 const updateQueryWithParam = (query, ...params) => {
   const currentParams = new URLSearchParams(query);
   params.forEach((paramItem) => {
