@@ -1,6 +1,7 @@
 const os = require("os");
 const express = require("express");
 const joiExpress = require("express-joi-validation");
+const cors = require("cors");
 const { logger } = require("./logger");
 const CONFIG = require("./config");
 const { tokenizeUnitSchema } = require("./validations");
@@ -35,6 +36,7 @@ const options = {
 app.use(formData.parse(options));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cors());
 
 app.use(assertHomeOrgExists);
 app.use(setOrgUidHeader);
