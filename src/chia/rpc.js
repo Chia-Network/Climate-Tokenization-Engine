@@ -23,7 +23,7 @@ const getBaseRpcOptions = () => {
     key = Buffer.from(process.env.CHIA_KEY_BASE64, "base64").toString("ascii");
   } else {
     let certificateFolderPath =
-      CONFIG.GENRAL.CERTIFICATE_FOLDER_PATH || `${chiaRoot}/config/ssl`;
+      CONFIG?.GENERAL?.CERTIFICATE_FOLDER_PATH || `${chiaRoot}/config/ssl`;
 
     // Replace "~" with home directory if it starts the path
     if (certificateFolderPath.startsWith("~")) {

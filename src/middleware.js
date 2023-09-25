@@ -45,7 +45,7 @@ const setOrgUidHeader = async (req, res, next) => {
   next();
 };
 
-const setOptionalRegistryApiKey = (req, res, next) => {
+const assertApiKey = (req, res, next) => {
   if (
     CONFIG.TOKENIZATION_ENGINE.API_KEY &&
     CONFIG.TOKENIZATION_ENGINE.API_KEY !== ""
@@ -54,7 +54,7 @@ const setOptionalRegistryApiKey = (req, res, next) => {
     if (CONFIG.TOKENIZATION_ENGINE.API_KEY === apikey) {
       next();
     } else {
-      res.status(403).json({ message: "CTE API key not found" });
+      res.status(403).json({ message: "Tokenization Engine API key not found", success: false });
     }
   } else {
     next();
@@ -82,6 +82,6 @@ const assertHomeOrgExists = async (req, res, next) => {
 module.exports = {
   errorHandler,
   setOrgUidHeader,
-  setOptionalRegistryApiKey,
-  assertHomeOrgExists
+  assertApiKey,
+  assertHomeOrgExists,
 };

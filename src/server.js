@@ -14,7 +14,7 @@ const {
 const {
   errorHandler,
   setOrgUidHeader,
-  setOptionalRegistryApiKey,
+  assertApiKey,
   assertHomeOrgExists,
 } = require("./middleware");
 
@@ -35,9 +35,11 @@ const options = {
 app.use(formData.parse(options));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(assertHomeOrgExists);
 app.use(setOrgUidHeader);
-app.use(setOptionalRegistryApiKey);
+app.use(assertApiKey);
+app.use(errorHandler);
 
 // proxy routes
 app.use("/units/tokenized", proxy.getTokenizedUnits());
@@ -49,8 +51,17 @@ app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);
 app.post("/parse-detok-file", parseDetokFile);
 app.post("/confirm-detokanization", confirmDetokanization);
 
-// Error handling
-app.use(errorHandler);
+/**
+ * Basic health check route.
+ *
+ * @returns {Object} An object containing a message and timestamp.
+ */
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    message: "OK",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Initialize server
 let shouldListen = false;

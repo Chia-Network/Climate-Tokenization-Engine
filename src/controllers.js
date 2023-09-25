@@ -34,7 +34,6 @@ const tokenizeUnit = async (req, res) => {
       },
     };
 
-    // TODO: Create a JSDoc for this response
     const data = await tokenDriver.createToken(tokenizationBody);
 
     const isTokenCreationPending = Boolean(data?.tx?.id);
@@ -48,7 +47,6 @@ const tokenizeUnit = async (req, res) => {
 
       const tokenConfirmedOnChain =
         await tokenDriver.waitForTokenizationTransactionConfirmation(
-          data.token,
           data.tx.id
         );
 
@@ -58,16 +56,16 @@ const tokenizeUnit = async (req, res) => {
           req.body.warehouseUnitId
         );
       } else {
-        logger.error("Token creation could not be confirmed.");
+        logger.error("Token creation could not be confirmed. Please check your wallet for stuck transactions.");
       }
     } else {
-      throw new Error(data.error);
+      throw new Error("Token creation could not be initiated.");
     }
   } catch (error) {
     res.status(400).json({
       message: "Error token could not be created",
       error: error.message,
-      success: false
+      success: false,
     });
     logger.error(`Error tokenizing: ${error.message}`);
   }
@@ -139,7 +137,7 @@ const parseDetokFile = async (req, res) => {
     res.status(400).json({
       message: "File could not be detokenized.",
       error: error.message,
-      success: false
+      success: false,
     });
     logger.error(`File could not be detokenized: ${error.message}`);
   }

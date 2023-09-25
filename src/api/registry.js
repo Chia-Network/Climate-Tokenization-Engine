@@ -34,16 +34,29 @@ const maybeAppendRegistryApiKey = (headers = {}) => {
  * @returns {Promise<Object>} The response body
  */
 const commitStagingData = async () => {
-  const response = await superagent
-    .post(`${registryUri}/v1/staging/commit`)
-    .set(maybeAppendRegistryApiKey());
+  try {
+    const response = await superagent
+      .post(`${registryUri}/v1/staging/commit`)
+      .set(maybeAppendRegistryApiKey());
 
-  await waitFor(5000);
-  await wallet.waitForAllTransactionsToConfirm();
-  await waitFor(5000);
-  await waitForRegistryDataSync();
+    await waitFor(5000);
+    await wallet.waitForAllTransactionsToConfirm();
+    await waitFor(5000);
+    await waitForRegistryDataSync();
 
-  return response.body;
+    return response.body;
+  } catch (error) {
+    logger.error(`Could not commit staging data: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
+  }
 };
 
 /**
@@ -52,13 +65,13 @@ const commitStagingData = async () => {
  * @param {Object} unit - The unit to be updated
  * @returns {Object} The cleaned unit
  */
-const cleanUnitBeforeUpdating = (unit) => {
+const sanitizeUnitForUpdate = (unit) => {
   const cleanedUnit = { ...unit };
-  ["issuance?.orgUid", "issuanceId", "orgUid", "serialNumberBlock"].forEach(
-    (key) => {
-      delete cleanedUnit[key];
-    }
-  );
+
+  delete cleanedUnit?.issuance?.orgUid;
+  delete cleanedUnit.issuanceId;
+  delete cleanedUnit.orgUid;
+  delete cleanedUnit.serialNumberBlock;
 
   Object.keys(cleanedUnit).forEach((key) => {
     if (cleanedUnit[key] === null) {
@@ -76,13 +89,32 @@ const cleanUnitBeforeUpdating = (unit) => {
  * @returns {Promise<Object>} The response body
  */
 const updateUnit = async (unit) => {
-  const cleanedUnit = cleanUnitBeforeUpdating(unit);
-  const response = await superagent
-    .put(`${registryUri}/v1/units`)
-    .send(cleanedUnit)
-    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  try {
+    const cleanedUnit = sanitizeUnitForUpdate(unit);
+    const response = await superagent
+      .put(`${registryUri}/v1/units`)
+      .send(cleanedUnit)
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-  return response?.body;
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
+    return response?.body;
+  } catch (error) {
+    logger.error(`Could not update unit: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
+  }
 };
 
 /**
@@ -94,7 +126,7 @@ const updateUnit = async (unit) => {
  * @returns {Promise<Object>} The response body
  */
 const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
-  const cleanedUnit = cleanUnitBeforeUpdating(unit);
+  const cleanedUnit = sanitizeUnitForUpdate(unit);
   if (beneficiaryName) {
     cleanedUnit.unitOwner = beneficiaryName;
   }
@@ -112,13 +144,34 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  * @returns {Promise<Object>} The response body
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
-  const response = await superagent
-    .get(
-      `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
-    )
-    .set(maybeAppendRegistryApiKey());
+  try {
+    const response = await superagent
+      .get(
+        `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+      )
+      .set(maybeAppendRegistryApiKey());
 
-  return response?.body;
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
+    return response?.body;
+  } catch (error) {
+    logger.error(
+      `Could not get asset unit blocks from registry: ${error.message}`
+    );
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
+  }
 };
 
 /**
@@ -134,10 +187,25 @@ const getLastProcessedHeight = async () => {
       .query({ orgUid: homeOrgUid })
       .set(maybeAppendRegistryApiKey());
 
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     return response.status === 200
       ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
       : null;
   } catch (error) {
+    logger.error(`Could not get last processed height: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
     return null;
   }
 };
@@ -163,6 +231,12 @@ const getHomeOrg = async () => {
       .get(`${registryUri}/v1/organizations`)
       .set(maybeAppendRegistryApiKey());
 
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     if (response.status !== 200) {
       throw new Error(`Received non-200 status code: ${response.status}`);
     }
@@ -172,6 +246,15 @@ const getHomeOrg = async () => {
     );
     return orgArray.find((org) => org.isHome) || null;
   } catch (error) {
+    logger.error(`Could not get home org: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
     return null;
   }
 };
@@ -183,74 +266,108 @@ const getHomeOrg = async () => {
  * @returns {Promise<Object>} The response body
  */
 const setLastProcessedHeight = async (height) => {
-  await wallet.waitForAllTransactionsToConfirm();
-  await waitFor(5000);
-  await waitForRegistryDataSync();
+  try {
+    await wallet.waitForAllTransactionsToConfirm();
+    await waitFor(5000);
+    await waitForRegistryDataSync();
 
-  const response = await superagent
-    .post(`${registryUri}/v1/organizations/metadata`)
-    .send({ lastRetiredBlockHeight: height.toString() })
-    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+    const response = await superagent
+      .post(`${registryUri}/v1/organizations/metadata`)
+      .send({ lastRetiredBlockHeight: height.toString() })
+      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-  const data = response.body;
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
 
-  if (
-    response.status !== 200 ||
-    data.message !== "Home org currently being updated, will be completed soon."
-  ) {
-    logger.fatal(
-      `CRITICAL ERROR: Could not set last processed height in registry.`
-    );
-    return;
+    const data = response.body;
+
+    if (
+      response.status !== 200 ||
+      data.message !==
+        "Home org currently being updated, will be completed soon."
+    ) {
+      logger.fatal(
+        `CRITICAL ERROR: Could not set last processed height in registry.`
+      );
+      return;
+    }
+
+    await wallet.waitForAllTransactionsToConfirm();
+    await waitFor(5000);
+    await waitForRegistryDataSync();
+
+    return data;
+  } catch (error) {
+    logger.error(`Could not set last processed height: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+      logger.error(`Additional error details: ${JSON.stringify(error)}`);
+    }
+
+    return null;
   }
-
-  await wallet.waitForAllTransactionsToConfirm();
-  await waitFor(5000);
-  await waitForRegistryDataSync();
-
-  return data;
 };
 
 /**
  * Confirms token registration on the warehouse.
  *
- * @param {number} [retry=0] - The retry count
- * @returns {Promise<boolean>} True if confirmed, false otherwise
+ * @async
+ * @function
+ * @param {number} [retry=0] - The retry count.
+ * @returns {Promise<boolean>} Returns a Promise that resolves to true if the token registration is confirmed, or false otherwise.
+ * @throws {Error} Throws an error if the Registry API key is invalid.
  */
 const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   if (retry > 60) return false;
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 30000));
+    await waitFor(30000);
+
     const response = await superagent
       .get(`${registryUri}/v1/staging/hasPendingTransactions`)
       .set(maybeAppendRegistryApiKey());
 
-    const thereAreNoPendingTransactions = response.body?.confirmed;
-    if (thereAreNoPendingTransactions) return true;
+    if (response.status === 403) {
+      throw new Error("Registry API key is invalid, please check your config.yaml.");
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 30000));
+    if (response.body?.confirmed) return true;
+
+    await waitFor(30000);
     return confirmTokenRegistrationOnWarehouse(retry + 1);
   } catch (error) {
-    logger.error(
-      `Error confirming token registration on warehouse: ${error.message}`
-    );
+    logger.error(`Error confirming token registration on registry: ${error.message}`);
+
+    if (error.response?.body) {
+      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
+    }
+
     return false;
   }
 };
 
+
 /**
  * Registers token creation on the registry.
  *
- * @param {Object} token - The token to register
- * @param {string} warehouseUnitId - The warehouse unit ID
- * @returns {Promise<Object>} The response body
+ * @async
+ * @function
+ * @param {Object} token - The token to register.
+ * @param {string} warehouseUnitId - The warehouse unit ID.
+ * @returns {Promise<Object|null>} Returns a Promise that resolves to the response body if successful, or null if an error occurs.
+ * @throws {Error} Throws an error if the Registry API key is invalid.
  */
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    // Running in core registry mode, detokenization object is replaced with empty strings
     if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
@@ -260,77 +377,105 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       .send({ [token.asset_id]: JSON.stringify(token) })
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-    const data = response.body;
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     if (
-      data.message ===
+      response.body.message ===
       "Home org currently being updated, will be completed soon."
     ) {
-      const isTokenRegistered = await confirmTokenRegistrationOnWarehouse();
-
-      if (isTokenRegistered && CONFIG.GENERAL.CORE_REGISTRY_MODE) {
+      if (
+        (await confirmTokenRegistrationOnWarehouse()) &&
+        CONFIG.GENERAL.CORE_REGISTRY_MODE
+      ) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
           token.asset_id
         );
       }
-
-      return response.body;
     } else {
       logger.error("Could not register token creation in registry.");
     }
+
+    return response.body;
   } catch (error) {
     logger.error(
       `Could not register token creation in registry: ${error.message}`
     );
+    if (error.response?.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+    return null;
   }
 };
 
 /**
- * Updates unit marketplace identifier with asset ID.
+ * Updates the marketplace identifier of a unit with an asset ID.
  *
- * @param {string} warehouseUnitId - The warehouse unit ID
- * @param {string} asset_id - The asset ID
+ * @async
+ * @function
+ * @param {string} warehouseUnitId - The warehouse unit ID to be updated.
+ * @param {string} asset_id - The new asset ID to be set as marketplace identifier.
+ * @returns {Promise<Object|null>} Returns a Promise that resolves to the updated unit data if successful, or null if an error occurs.
+ * @throws {Error} Throws an error if the Registry API key is invalid.
  */
 const updateUnitMarketplaceIdentifierWithAssetId = async (
   warehouseUnitId,
   asset_id
 ) => {
   try {
-    const unitToBeUpdatedResponse = await superagent
+    const getResponse = await superagent
       .get(`${registryUri}/v1/units`)
-      .query({ warehouseUnitId: warehouseUnitId })
+      .query({ warehouseUnitId })
       .set(maybeAppendRegistryApiKey());
 
-    const unitToBeUpdated = unitToBeUpdatedResponse.body;
-    unitToBeUpdated.marketplaceIdentifier = asset_id;
-    unitToBeUpdated.marketplace = "Tokenized on Chia";
+    if (getResponse.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
 
-    [
-      "issuance?.orgUid",
-      "issuanceId",
-      "orgUid",
-      "serialNumberBlock",
-      "unitCount",
-      "unitBlockStart",
-      "unitBlockEnd",
-    ].forEach((key) => {
-      delete unitToBeUpdated[key];
-    });
+    const unit = {
+      ...sanitizeUnitForUpdate(getResponse.body),
+      marketplaceIdentifier: asset_id,
+      marketplace: "Tokenized on Chia",
+    };
 
-    Object.keys(unitToBeUpdated).forEach((key) => {
-      if (unitToBeUpdated[key] === null) {
-        delete unitToBeUpdated[key];
-      }
-    });
-
-    await superagent
+    const putResponse = await superagent
       .put(`${registryUri}/v1/units`)
-      .send(unitToBeUpdated)
+      .send(unit)
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+
+    if (putResponse.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
+    await commitStagingData();
+    await waitFor(5000);
+    await wallet.waitForAllTransactionsToConfirm();
+    await waitFor(5000);
+    await waitForRegistryDataSync();
+
+    return putResponse?.body;
   } catch (error) {
     logger.error(
       `Could not update unit marketplace identifier with asset id: ${error.message}`
     );
+
+    if (error.response?.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
   }
 };
 
@@ -341,9 +486,29 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
  * @returns {Promise<Object>} The organization metadata
  */
 const getOrgMetaData = async (orgUid) => {
-  const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
-  const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
-  return response.body;
+  try {
+    const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
+    const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
+    return response.body;
+  } catch (error) {
+    logger.error(`Could not get org metadata: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    throw new Error(`Could not get org metadata: ${error}`);
+  }
 };
 
 /**
@@ -377,7 +542,9 @@ const waitForRegistryDataSync = async () => {
   const homeOrg = await getHomeOrg();
 
   if (!homeOrg) {
-    logger.warn("Can not find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization.");
+    logger.warn(
+      "Can not find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
+    );
     return waitForRegistryDataSync();
   }
 
@@ -424,9 +591,24 @@ const getTokenizedUnitByAssetId = async (assetId) => {
   try {
     const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     return response.body;
   } catch (error) {
     logger.error(`Could not get tokenized unit by asset id: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
     throw new Error(`Could not get tokenized unit by asset id: ${error}`);
   }
 };
@@ -441,9 +623,24 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
     const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
+
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     return response.body[0];
   } catch (error) {
     logger.error(`Could not get corresponding project data: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
     throw new Error(`Could not get corresponding project data: ${error}`);
   }
 };
@@ -511,15 +708,30 @@ const splitUnit = async ({
       .send(JSON.stringify(payload))
       .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
+    if (response.status === 403) {
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
+    }
+
     return response.body;
   } catch (error) {
-    throw new Error(`Could not split unit on registry: ${error}`);
+    logger.error(`Could not split unit on registry: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
   }
 };
 
 module.exports = {
   commitStagingData,
-  cleanUnitBeforeUpdating,
+  sanitizeUnitForUpdate,
   updateUnit,
   retireUnit,
   getAssetUnitBlocks,

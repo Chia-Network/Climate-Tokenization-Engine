@@ -48,13 +48,11 @@ const sendParseDetokRequest = async (detokString) => {
 /**
  * Waits for confirmation of token creation.
  *
- * @param {string} token - The token to confirm
  * @param {string} transactionId - The transaction ID
  * @param {number} [retry=0] - The retry count
  * @returns {Promise<boolean>} True if confirmed, false otherwise
  */
 const waitForTokenizationTransactionConfirmation = async (
-  token,
   transactionId,
   retry = 0
 ) => {
@@ -73,11 +71,7 @@ const waitForTokenizationTransactionConfirmation = async (
     }
 
     await waitFor(30000);
-    return waitForTokenizationTransactionConfirmation(
-      token,
-      transactionId,
-      retry + 1
-    );
+    return waitForTokenizationTransactionConfirmation(transactionId, retry + 1);
   } catch (error) {
     logger.error(
       `Error confirming token creation: ${transactionId}, ${error.message}`
@@ -112,21 +106,44 @@ const confirmDetokanization = async (payload) => {
 };
 
 /**
- * Registers a token creation event on the registry.
+ * Registers a token creation event on the registry and returns a TokenCreatedResponse.
  *
  * @async
  * @function
  * @param {TokenizationBody} tokenizationBody - The request body containing token and payment details.
+ * @returns {Promise<TokenCreatedResponse>} The token creation response.
+ * @throws {Error} If the Token Driver API key is invalid.
  */
 const createToken = async (tokenizationBody) => {
-  const response = await superagent
-    .post(`${tokenDriverUri}/v1/tokens`)
-    .send(tokenizationBody)
-    .set(maybeAppendTokenDriverApiKey({ "Content-Type": "application/json" }));
+  try {
+    const response = await superagent
+      .post(`${tokenDriverUri}/v1/tokens`)
+      .send(tokenizationBody)
+      .set(
+        maybeAppendTokenDriverApiKey({ "Content-Type": "application/json" })
+      );
 
-  logger.debug(`Token creation response: ${JSON.stringify(response.body)}`);
+    if (response.status === 403) {
+      throw new Error(
+        "Token Driver API key is invalid, please check your config.yaml."
+      );
+    }
 
-  return response?.data;
+    logger.debug(`Token creation response: ${JSON.stringify(response.body)}`);
+
+    return response?.body;
+  } catch (error) {
+    logger.error(`Token creation could not be initiated: ${error.message}`);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
+    return null;
+  }
 };
 
 module.exports = {

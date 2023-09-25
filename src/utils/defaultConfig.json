@@ -1,7 +1,7 @@
 {
   "GENERAL": {
     "CORE_REGISTRY_MODE": false,
-    "LOG_LEVEL": "info",
+    "LOG_LEVEL": "task",
     "LOG_RETENTION_DAYS": "30"
   },
   "CHIA": {

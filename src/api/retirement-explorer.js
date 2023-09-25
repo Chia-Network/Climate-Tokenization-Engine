@@ -1,6 +1,6 @@
 const superagent = require("superagent");
 const { logger } = require("../logger");
-const CONFIG = require('../config');
+const CONFIG = require("../config");
 
 const { generateUriForHostAndPort } = require("../utils");
 
@@ -43,9 +43,23 @@ const getRetirementActivities = async (page, limit, minHeight) => {
       .set(maybeAppendRetirementExplorerApiKey())
       .timeout({ response: 300000, deadline: 600000 });
 
+    if (response.status === 403) {
+      throw new Error(
+        "Retirement Explorer API key is invalid, please check your config.yaml."
+      );
+    }
+
     return response.body?.activities || [];
   } catch (error) {
     logger.error("Cannot get retirement activities", error);
+
+    // Log additional information if present in the error object
+    if (error.response && error.response.body) {
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
+    }
+
     return [];
   }
 };
