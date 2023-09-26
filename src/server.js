@@ -66,22 +66,12 @@ app.get("/health", (req, res) => {
 });
 
 // Initialize server
-let shouldListen = false;
+let server;
 
-// Check if CONFIG.TOKENIZATION_ENGINE.HOST is either "localhost" or "127.0.0.1"
-// OR if CONFIG.TOKENIZATION_ENGINE.API_KEY exists.
-// In either case, set shouldListen to true.
-if (
-  ["localhost", "127.0.0.1"].includes(CONFIG().TOKENIZATION_ENGINE.HOST) ||
-  CONFIG().TOKENIZATION_ENGINE.API_KEY
-) {
-  shouldListen = true;
-}
-
-if (shouldListen) {
-  app.listen(
+const startServer = () => {
+  server = app.listen(
     CONFIG().TOKENIZATION_ENGINE.PORT,
-    CONFIG().TOKENIZATION_ENGINE.HOST,
+    CONFIG().TOKENIZATION_ENGINE.BIND_ADDRESS,
     () => {
       logger.info(
         `Application is running on port ${CONFIG().TOKENIZATION_ENGINE.PORT}.`
@@ -93,10 +83,45 @@ if (shouldListen) {
   if (CONFIG().GENERAL.CORE_REGISTRY_MODE) {
     setTimeout(() => scheduler.start(), 5000);
   }
+};
+
+const stopServer = () => {
+  if (server) {
+    server.close((err) => {
+      if (err) {
+        logger.error("Error closing server:", err);
+      } else {
+        logger.info("Server closed gracefully.");
+      }
+    });
+  }
+};
+
+let shouldListen = false;
+
+// Check if CONFIG.TOKENIZATION_ENGINE.BIND_ADDRESS is either "localhost" or "127.0.0.1"
+// OR if CONFIG.TOKENIZATION_ENGINE.API_KEY exists.
+// In either case, set shouldListen to true.
+if (
+  ["localhost", "127.0.0.1"].includes(
+    CONFIG().TOKENIZATION_ENGINE.BIND_ADDRESS
+  ) ||
+  CONFIG().TOKENIZATION_ENGINE.API_KEY
+) {
+  shouldListen = true;
+}
+
+if (shouldListen) {
+  startServer();
 } else {
   logger.warn(
     "Server not started due to missing CONFIG.TOKENIZATION_ENGINE.API_KEY on a non-local host."
   );
 }
 
-module.exports = app;
+// Export the start and stop server functions
+module.exports = {
+  app,
+  startServer,
+  stopServer,
+};

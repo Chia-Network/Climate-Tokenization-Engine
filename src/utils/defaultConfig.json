@@ -10,7 +10,7 @@
     "CERTIFICATE_FOLDER_PATH": null,
     "ALLOW_SELF_SIGNED_CERTIFICATES": true
   },
-  "REGISTRY": {
+  "CADT": {
     "PROTOCOL": "http",
     "HOST": "127.0.0.1",
     "PORT": 31310,
@@ -22,7 +22,7 @@
     "PORT": 31313,
     "API_KEY": null
   },
-  "TOKEN_DRIVER": {
+  "CHIA_CLIMATE_TOKENIZATION": {
     "PROTOCOL": "http",
     "HOST": "127.0.0.1",
     "PORT": 31312,
@@ -33,6 +33,7 @@
     "HOST": "127.0.0.1",
     "API_KEY": null,
     "PORT": 31311,
+    "BIND_ADDRESS": "localhost",
     "UNITS_FILTER": "unitStatus:[\"Retired\", \"Cancelled\", \"Expired\"]:not",
     "TASKS": {
       "SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS": 300

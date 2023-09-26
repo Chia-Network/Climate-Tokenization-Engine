@@ -9,9 +9,9 @@ const {
 } = require("../utils");
 
 const tokenDriverUri = generateUriForHostAndPort(
-  CONFIG().TOKEN_DRIVER.PROTOCOL,
-  CONFIG().TOKEN_DRIVER.HOST,
-  CONFIG().TOKEN_DRIVER.PORT
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.PROTOCOL,
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.HOST,
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.PORT
 );
 
 /**
@@ -20,8 +20,8 @@ const tokenDriverUri = generateUriForHostAndPort(
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendTokenDriverApiKey = (headers = {}) => {
-  if (CONFIG().TOKEN_DRIVER.API_KEY) {
-    headers["x-api-key"] = CONFIG().TOKEN_DRIVER.API_KEY;
+  if (CONFIG().CHIA_CLIMATE_TOKENIZATION.API_KEY) {
+    headers["x-api-key"] = CONFIG().CHIA_CLIMATE_TOKENIZATION.API_KEY;
   }
   return headers;
 };
@@ -129,7 +129,7 @@ const createToken = async (tokenizationBody) => {
       );
     }
 
-    logger.debug(`Token creation response: ${JSON.stringify(response.body)}`);
+    logger.trace(`Token creation response: ${JSON.stringify(response.body)}`);
 
     return response?.body;
   } catch (error) {

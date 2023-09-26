@@ -3,7 +3,7 @@ const sinon = require("sinon");
 const request = require("supertest");
 const nock = require("nock");
 
-const app = require("../src/server");
+const { app, stopServer } = require("../src/server");
 const wallet = require("../src/chia/wallet");
 const registry = require("../src/api/registry");
 const tokenDriver = require("../src/api/token-driver");
@@ -14,14 +14,12 @@ const { CONFIG, setConfig } = require("../src/config");
 
 // Create a nock interceptor for the registry API
 const registryMock = nock(
-  `${CONFIG().REGISTRY.PROTOCOL}://${CONFIG().REGISTRY.HOST}:${
-    CONFIG().REGISTRY.PORT
-  }`
+  `${CONFIG().CADT.PROTOCOL}://${CONFIG().CADT.HOST}:${CONFIG().CADT.PORT}`
 );
 const tokenDriverMock = nock(
-  `${CONFIG().TOKEN_DRIVER.PROTOCOL}://${CONFIG().TOKEN_DRIVER.HOST}:${
-    CONFIG().TOKEN_DRIVER.PORT
-  }`
+  `${CONFIG().CHIA_CLIMATE_TOKENIZATION.PROTOCOL}://${
+    CONFIG().CHIA_CLIMATE_TOKENIZATION.HOST
+  }:${CONFIG().CHIA_CLIMATE_TOKENIZATION.PORT}`
 );
 
 describe("Create Token Process", () => {
@@ -54,6 +52,11 @@ describe("Create Token Process", () => {
   afterEach(() => {
     sinon.restore();
     nock.cleanAll();
+  });
+
+  afterAll(async () => {
+    // Close the server gracefully
+    await stopServer();
   });
 
   it("health check", async () => {
