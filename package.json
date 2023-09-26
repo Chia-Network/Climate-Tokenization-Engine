@@ -6,6 +6,7 @@
   "main": "proxy.js",
   "scripts": {
     "test": "jest --detectOpenHandles",
+    "test-ci": "jest --ci",
     "start": "node --no-warnings src/server.js",
     "prepare-binary": "rm -rf dist && mkdir dist",
     "create-win-x64-dist": "pkg package.json -t node16-win-x64 --out-path dist",
@@ -22,7 +23,7 @@
     "url": "git+https://github.com/Chia-Network/climate-tokenization-engine.git"
   },
   "author": "Chia Networks Inc",
-  "license": "Apache",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Chia-Network/climate-tokenization-engine/issues"
   },

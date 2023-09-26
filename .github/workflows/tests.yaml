@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: NPM Tests
+    runs-on: ubuntu-latest
+    container:
+      image: node:18.16
+
+    steps:
+      - uses: Chia-Network/actions/clean-workspace@main
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: npm install
+        run: npm install
+
+      - name: install global packages
+        run: npm i -g @babel/cli sequelize-cli cross-env
+
+      - name: npm tests
+        run: npm run test
