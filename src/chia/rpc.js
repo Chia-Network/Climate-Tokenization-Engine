@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { getChiaRoot } = require("chia-root-resolver");
 const { logger } = require("../logger");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 
 /**
  * Get base options for request.

@@ -4,7 +4,7 @@ const wallet = require("../chia/wallet");
 const registry = require("../api/registry");
 const retirementExplorer = require("../api/retirement-explorer");
 const { logger } = require("../logger");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 
 let isTaskInProgress = false;
 
@@ -31,7 +31,7 @@ const task = new Task("sync-retirements", async () => {
 const job = new SimpleIntervalJob(
   {
     seconds:
-      CONFIG.TOKENIZATION_ENGINE.TASKS
+      CONFIG().TOKENIZATION_ENGINE.TASKS
         .SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS,
     runImmediately: true,
   },

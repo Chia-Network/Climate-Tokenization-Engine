@@ -1,7 +1,7 @@
 const _ = require("lodash");
 const { logger } = require("./logger");
 const { getHomeOrgUid } = require("./api/registry");
-const CONFIG = require("./config");
+const { CONFIG } = require("./config");
 
 /**
  * Error-handling middleware.
@@ -47,14 +47,17 @@ const setOrgUidHeader = async (req, res, next) => {
 
 const assertApiKey = (req, res, next) => {
   if (
-    CONFIG.TOKENIZATION_ENGINE.API_KEY &&
-    CONFIG.TOKENIZATION_ENGINE.API_KEY !== ""
+    CONFIG().TOKENIZATION_ENGINE.API_KEY &&
+    CONFIG().TOKENIZATION_ENGINE.API_KEY !== ""
   ) {
     const apikey = req.header("x-api-key");
-    if (CONFIG.TOKENIZATION_ENGINE.API_KEY === apikey) {
+    if (CONFIG().TOKENIZATION_ENGINE.API_KEY === apikey) {
       next();
     } else {
-      res.status(403).json({ message: "Tokenization Engine API key not found", success: false });
+      res.status(403).json({
+        message: "Tokenization Engine API key not found",
+        success: false,
+      });
     }
   } else {
     next();
@@ -66,7 +69,9 @@ const assertHomeOrgExists = async (req, res, next) => {
     const homeOrgUid = await getHomeOrgUid();
 
     if (homeOrgUid === null) {
-      throw new Error("The connected registry does not have a valid Home Org. Please create one to use this software.");
+      throw new Error(
+        "The connected registry does not have a valid Home Org. Please create one to use this software."
+      );
     }
 
     next();

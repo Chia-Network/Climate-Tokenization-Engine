@@ -1,13 +1,13 @@
 const superagent = require("superagent");
 const { logger } = require("../logger");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 
 const { generateUriForHostAndPort } = require("../utils");
 
 const retirementExplorerUri = generateUriForHostAndPort(
-  CONFIG.RETIREMENT_EXPLORER.PROTOCOL,
-  CONFIG.RETIREMENT_EXPLORER.HOST,
-  CONFIG.RETIREMENT_EXPLORER.PORT
+  CONFIG().RETIREMENT_EXPLORER.PROTOCOL,
+  CONFIG().RETIREMENT_EXPLORER.HOST,
+  CONFIG().RETIREMENT_EXPLORER.PORT
 );
 
 /**
@@ -16,8 +16,8 @@ const retirementExplorerUri = generateUriForHostAndPort(
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
-  if (CONFIG.RETIREMENT_EXPLORER.API_KEY) {
-    headers["x-api-key"] = CONFIG.RETIREMENT_EXPLORER.API_KEY;
+  if (CONFIG().RETIREMENT_EXPLORER.API_KEY) {
+    headers["x-api-key"] = CONFIG().RETIREMENT_EXPLORER.API_KEY;
   }
   return headers;
 };

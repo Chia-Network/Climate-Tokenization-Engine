@@ -56,7 +56,9 @@ const tokenizeUnit = async (req, res) => {
           req.body.warehouseUnitId
         );
       } else {
-        logger.error("Token creation could not be confirmed. Please check your wallet for stuck transactions.");
+        logger.error(
+          "Token creation could not be confirmed. Please check your wallet for stuck transactions."
+        );
       }
     } else {
       throw new Error("Token creation could not be initiated.");
@@ -83,21 +85,29 @@ const parseDetokFile = async (req, res) => {
     detokString = detokString.replace(/(\r\n|\n|\r)/gm, "");
     const detokStringkIsValid =
       typeof detokString === "string" && detokString.startsWith("detok");
+
     if (!detokStringkIsValid) {
-      throw new Error("Uploaded file not valid.");
+      throw new Error(
+        "The uploaded file is not a valid 'detok' format. Please upload a file with the correct format."
+      );
     }
 
     const parseDetokResponse = await tokenDriver.sendParseDetokRequest(
       detokString
     );
+
     const isDetokParsed = Boolean(parseDetokResponse?.token?.asset_id);
     if (!isDetokParsed) {
-      throw new Error("Could not parse detok file properly.");
+      throw new Error(
+        "Failed to read the 'detok' file. The file might be corrupted or in an incorrect format."
+      );
     }
 
     const assetId = parseDetokResponse?.token?.asset_id;
+
     const unitToBeDetokenizedResponse =
       await registry.getTokenizedUnitByAssetId(assetId);
+
     let unitToBeDetokenized = JSON.parse(unitToBeDetokenizedResponse);
     if (unitToBeDetokenized.length) {
       unitToBeDetokenized = unitToBeDetokenized[0];
@@ -111,7 +121,7 @@ const parseDetokFile = async (req, res) => {
       unitToBeDetokenized?.issuance?.warehouseProjectId
     );
 
-    const orgUid = unitToBeDetokenized?.orgUid; // Missing local variable
+    const orgUid = unitToBeDetokenized?.orgUid;
 
     const orgMetaData = await registry.getOrgMetaData(orgUid);
     const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
@@ -134,12 +144,15 @@ const parseDetokFile = async (req, res) => {
 
     res.send(responseObject);
   } catch (error) {
+    logger.error(
+      `Failed to detokenize the file due to the following error: ${error.message}`
+    );
+
     res.status(400).json({
       message: "File could not be detokenized.",
       error: error.message,
       success: false,
     });
-    logger.error(`File could not be detokenized: ${error.message}`);
   }
 };
 
@@ -159,7 +172,7 @@ const confirmDetokanization = async (req, res) => {
     res.send(confirmDetokanizationResponse);
   } catch (error) {
     res.status(400).json({
-      message: "Detokanization could not be confirmed",
+      message: "Unable to confirm that the file was successfully detokenized",
       error: error.message,
       success: false,
     });

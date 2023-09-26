@@ -1,6 +1,6 @@
 const superagent = require("superagent");
 const { logger } = require("../logger");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 
 const {
   generateUriForHostAndPort,
@@ -9,9 +9,9 @@ const {
 } = require("../utils");
 
 const tokenDriverUri = generateUriForHostAndPort(
-  CONFIG.TOKEN_DRIVER.PROTOCOL,
-  CONFIG.TOKEN_DRIVER.HOST,
-  CONFIG.TOKEN_DRIVER.PORT
+  CONFIG().TOKEN_DRIVER.PROTOCOL,
+  CONFIG().TOKEN_DRIVER.HOST,
+  CONFIG().TOKEN_DRIVER.PORT
 );
 
 /**
@@ -20,8 +20,8 @@ const tokenDriverUri = generateUriForHostAndPort(
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendTokenDriverApiKey = (headers = {}) => {
-  if (CONFIG.TOKEN_DRIVER.API_KEY) {
-    headers["x-api-key"] = CONFIG.TOKEN_DRIVER.API_KEY;
+  if (CONFIG().TOKEN_DRIVER.API_KEY) {
+    headers["x-api-key"] = CONFIG().TOKEN_DRIVER.API_KEY;
   }
   return headers;
 };

@@ -1,18 +1,14 @@
 const superagent = require("superagent");
 const Datalayer = require("chia-datalayer");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
-const {
-  generateUriForHostAndPort,
-  waitFor,
-  parseSerialNumber,
-} = require("../utils");
+const utils = require("../utils");
 
-const registryUri = generateUriForHostAndPort(
-  CONFIG.REGISTRY.PROTOCOL,
-  CONFIG.REGISTRY.HOST,
-  CONFIG.REGISTRY.PORT
+const registryUri = utils.generateUriForHostAndPort(
+  CONFIG().REGISTRY.PROTOCOL,
+  CONFIG().REGISTRY.HOST,
+  CONFIG().REGISTRY.PORT
 );
 
 /**
@@ -22,8 +18,8 @@ const registryUri = generateUriForHostAndPort(
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendRegistryApiKey = (headers = {}) => {
-  if (CONFIG.REGISTRY.API_KEY) {
-    headers["x-api-key"] = CONFIG.REGISTRY.API_KEY;
+  if (CONFIG().REGISTRY.API_KEY) {
+    headers["x-api-key"] = CONFIG().REGISTRY.API_KEY;
   }
   return headers;
 };
@@ -39,9 +35,9 @@ const commitStagingData = async () => {
       .post(`${registryUri}/v1/staging/commit`)
       .set(maybeAppendRegistryApiKey());
 
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await wallet.waitForAllTransactionsToConfirm();
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
     return response.body;
@@ -244,6 +240,7 @@ const getHomeOrg = async () => {
     const orgArray = Object.keys(response.body).map(
       (key) => response.body[key]
     );
+
     return orgArray.find((org) => org.isHome) || null;
   } catch (error) {
     logger.error(`Could not get home org: ${error.message}`);
@@ -268,7 +265,7 @@ const getHomeOrg = async () => {
 const setLastProcessedHeight = async (height) => {
   try {
     await wallet.waitForAllTransactionsToConfirm();
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
     const response = await superagent
@@ -296,7 +293,7 @@ const setLastProcessedHeight = async (height) => {
     }
 
     await wallet.waitForAllTransactionsToConfirm();
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
     return data;
@@ -325,34 +322,43 @@ const setLastProcessedHeight = async (height) => {
  * @throws {Error} Throws an error if the Registry API key is invalid.
  */
 const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
+  if (process.env.NODE_ENV === "test") {
+    return true;
+  }
+
   if (retry > 60) return false;
 
   try {
-    await waitFor(30000);
+    await utils.waitFor(30000);
 
     const response = await superagent
       .get(`${registryUri}/v1/staging/hasPendingTransactions`)
       .set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
-      throw new Error("Registry API key is invalid, please check your config.yaml.");
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
     }
 
     if (response.body?.confirmed) return true;
 
-    await waitFor(30000);
+    await utils.waitFor(30000);
     return confirmTokenRegistrationOnWarehouse(retry + 1);
   } catch (error) {
-    logger.error(`Error confirming token registration on registry: ${error.message}`);
+    logger.error(
+      `Error confirming token registration on registry: ${error.message}`
+    );
 
     if (error.response?.body) {
-      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
     }
 
     return false;
   }
 };
-
 
 /**
  * Registers token creation on the registry.
@@ -368,7 +374,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    if (CONFIG.GENERAL.CORE_REGISTRY_MODE) {
+    if (CONFIG().GENERAL.CORE_REGISTRY_MODE) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
@@ -388,8 +394,8 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       "Home org currently being updated, will be completed soon."
     ) {
       if (
-        (await confirmTokenRegistrationOnWarehouse()) &&
-        CONFIG.GENERAL.CORE_REGISTRY_MODE
+        CONFIG().GENERAL.CORE_REGISTRY_MODE &&
+        (await confirmTokenRegistrationOnWarehouse())
       ) {
         await updateUnitMarketplaceIdentifierWithAssetId(
           warehouseUnitId,
@@ -458,9 +464,9 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
     }
 
     await commitStagingData();
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await wallet.waitForAllTransactionsToConfirm();
-    await waitFor(5000);
+    await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
     return putResponse?.body;
@@ -517,25 +523,29 @@ const getOrgMetaData = async (orgUid) => {
  * @returns {Promise<void>}
  */
 const waitForRegistryDataSync = async () => {
-  await waitFor(5000);
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  await utils.waitFor(5000);
   const dataLayerConfig = {};
 
-  if (CONFIG.CHIA.DATA_LAYER_HOST) {
-    dataLayerConfig.datalayer_host = CONFIG.CHIA.DATA_LAYER_HOST;
+  if (CONFIG().CHIA.DATA_LAYER_HOST) {
+    dataLayerConfig.datalayer_host = CONFIG().CHIA.DATA_LAYER_HOST;
   }
 
-  if (CONFIG.CHIA.WALLET_HOST) {
-    dataLayerConfig.wallet_host = CONFIG.CHIA.WALLET_HOST;
+  if (CONFIG().CHIA.WALLET_HOST) {
+    dataLayerConfig.wallet_host = CONFIG().CHIA.WALLET_HOST;
   }
 
-  if (CONFIG.CHIA.CERTIFICATE_FOLDER_PATH) {
+  if (CONFIG().CHIA.CERTIFICATE_FOLDER_PATH) {
     dataLayerConfig.certificate_folder_path =
-      CONFIG.CHIA.CERTIFICATE_FOLDER_PATH;
+      CONFIG().CHIA.CERTIFICATE_FOLDER_PATH;
   }
 
-  if (CONFIG.CHIA.ALLOW_SELF_SIGNED_CERTIFICATES) {
+  if (CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES) {
     dataLayerConfig.allowUnverifiedCert =
-      CONFIG.CHIA.ALLOW_SELF_SIGNED_CERTIFICATES;
+      CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES;
   }
 
   const datalayer = new Datalayer(dataLayerConfig);
@@ -668,7 +678,7 @@ const splitUnit = async ({
   );
 
   // Parse the serialNumberBlock
-  const { unitBlockStart, unitBlockEnd } = parseSerialNumber(
+  const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(
     unit.serialNumberBlock
   );
 

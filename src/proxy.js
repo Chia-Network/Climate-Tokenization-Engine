@@ -1,12 +1,12 @@
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { getHomeOrgUid } = require("./api/registry");
 const { updateQueryWithParam, generateUriForHostAndPort } = require("./utils");
-const CONFIG = require("./config");
+const { CONFIG } = require("./config");
 
 const registryUri = generateUriForHostAndPort(
-  CONFIG.REGISTRY.PROTOCOL,
-  CONFIG.REGISTRY.HOST,
-  CONFIG.REGISTRY.PORT
+  CONFIG().REGISTRY.PROTOCOL,
+  CONFIG().REGISTRY.HOST,
+  CONFIG().REGISTRY.PORT
 );
 
 const getTokenizedUnits = () => {
@@ -26,8 +26,8 @@ const getTokenizedUnits = () => {
       return "/v1/units" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG.REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG.REGISTRY.API_KEY);
+      if (CONFIG().REGISTRY.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {
@@ -55,8 +55,8 @@ const getProjectsFromRegistry = () => {
       return "/v1/projects" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG.REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG.REGISTRY.API_KEY);
+      if (CONFIG().REGISTRY.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {
@@ -82,13 +82,13 @@ const getUntokenizedUnits = () => {
         { param: "hasMarketplaceIdentifier", value: false },
         { param: "orgUid", value: homeOrgUid },
         { param: "includeProjectInfoInSearch", value: true },
-        { param: "filter", value: CONFIG.TOKENIZATION_ENGINE.UNITS_FILTER }
+        { param: "filter", value: CONFIG().TOKENIZATION_ENGINE.UNITS_FILTER }
       );
       return "/v1/units" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG.REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG.REGISTRY.API_KEY);
+      if (CONFIG().REGISTRY.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {

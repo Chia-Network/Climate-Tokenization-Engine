@@ -1,9 +1,9 @@
 const superagent = require("superagent");
 const https = require("https");
 const { getBaseRpcOptions } = require("./rpc");
-const CONFIG = require("../config");
+const { CONFIG } = require("../config");
 
-const { WALLET_HOST, ALLOW_SELF_SIGNED_CERTIFICATES } = CONFIG.CHIA;
+const { WALLET_HOST, ALLOW_SELF_SIGNED_CERTIFICATES } = CONFIG().CHIA;
 
 const walletIsSynced = async () => {
   try {

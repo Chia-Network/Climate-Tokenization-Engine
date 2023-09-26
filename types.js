@@ -94,3 +94,4 @@
  * @property {string} token_hexstr
  * @property {Tx} tx
  */
+
