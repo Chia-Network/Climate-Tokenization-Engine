@@ -19,7 +19,7 @@ const task = new Task("sync-retirements", async () => {
       await startSyncRetirementsTask();
     }
   } catch (error) {
-    logger.task_error(`Error in sync-retirements task: ${error.message}`);
+    logger.error(`Error in sync-retirements task: ${error.message}`);
   } finally {
     isTaskInProgress = false;
   }

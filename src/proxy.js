@@ -4,9 +4,9 @@ const { updateQueryWithParam, generateUriForHostAndPort } = require("./utils");
 const { CONFIG } = require("./config");
 
 const registryUri = generateUriForHostAndPort(
-  CONFIG().REGISTRY.PROTOCOL,
-  CONFIG().REGISTRY.HOST,
-  CONFIG().REGISTRY.PORT
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
 );
 
 const getTokenizedUnits = () => {
@@ -26,8 +26,8 @@ const getTokenizedUnits = () => {
       return "/v1/units" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG().REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
+      if (CONFIG().CADT.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().CADT.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {
@@ -55,8 +55,8 @@ const getProjectsFromRegistry = () => {
       return "/v1/projects" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG().REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
+      if (CONFIG().CADT.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().CADT.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {
@@ -87,8 +87,8 @@ const getUntokenizedUnits = () => {
       return "/v1/units" + newQuery;
     },
     onProxyReq: (proxyReq) => {
-      if (CONFIG().REGISTRY.API_KEY) {
-        proxyReq.setHeader("x-api-key", CONFIG().REGISTRY.API_KEY);
+      if (CONFIG().CADT.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().CADT.API_KEY);
       }
     },
     onProxyRes: async (proxyRes) => {

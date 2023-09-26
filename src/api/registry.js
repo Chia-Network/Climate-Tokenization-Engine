@@ -6,9 +6,9 @@ const wallet = require("../chia/wallet");
 const utils = require("../utils");
 
 const registryUri = utils.generateUriForHostAndPort(
-  CONFIG().REGISTRY.PROTOCOL,
-  CONFIG().REGISTRY.HOST,
-  CONFIG().REGISTRY.PORT
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
 );
 
 /**
@@ -18,8 +18,8 @@ const registryUri = utils.generateUriForHostAndPort(
  * @returns {Object} Headers with API Key added if available
  */
 const maybeAppendRegistryApiKey = (headers = {}) => {
-  if (CONFIG().REGISTRY.API_KEY) {
-    headers["x-api-key"] = CONFIG().REGISTRY.API_KEY;
+  if (CONFIG().CADT.API_KEY) {
+    headers["x-api-key"] = CONFIG().CADT.API_KEY;
   }
   return headers;
 };
