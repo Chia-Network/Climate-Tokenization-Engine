@@ -1,20 +1,23 @@
 const superagent = require("superagent");
 const https = require("https");
-const { getBaseOptions } = require("../utils/api-utils");
-const { getConfig } = require("../utils/config-loader");
-let CONFIG = getConfig();
+const { getBaseRpcOptions } = require("./rpc");
+const { CONFIG } = require("../config");
+
+const { WALLET_HOST, ALLOW_SELF_SIGNED_CERTIFICATES } = CONFIG().CHIA;
 
 const walletIsSynced = async () => {
   try {
-    const { cert, key, timeout } = getBaseOptions();
+    const { cert, key, timeout } = getBaseRpcOptions();
 
     const response = await superagent
-      .post(`${CONFIG.WALLET_HOST}/get_sync_status`)
+      .post(`${WALLET_HOST}/get_sync_status`)
       .send({})
       .key(key)
       .cert(cert)
       .timeout(timeout)
-      .agent(new https.Agent({ rejectUnauthorized: false }));
+      .agent(
+        new https.Agent({ rejectUnauthorized: !ALLOW_SELF_SIGNED_CERTIFICATES })
+      );
 
     const data = JSON.parse(response.text);
 
@@ -45,10 +48,10 @@ const waitForAllTransactionsToConfirm = async () => {
 };
 
 const hasUnconfirmedTransactions = async (options) => {
-  const { cert, key, timeout } = getBaseOptions();
+  const { cert, key, timeout } = getBaseRpcOptions();
 
   const response = await superagent
-    .post(`${CONFIG.WALLET_HOST}/get_transactions`)
+    .post(`${WALLET_HOST}/get_transactions`)
     .send({
       wallet_id: options?.walletId || 1,
       sort_key: "RELEVANCE",
