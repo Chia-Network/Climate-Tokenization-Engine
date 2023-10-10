@@ -1,3 +1,25 @@
+## [1.3.11](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.10...1.3.11) (2023-10-10)
+
+
+### Bug Fixes
+
+* only attempt to autoretire your own units ([2a5bbeb](https://github.com/Chia-Network/climate-tokenization-engine/commit/2a5bbeb6f4c00711b147b448449e091bece77ecd))
+* package.json ([176a93e](https://github.com/Chia-Network/climate-tokenization-engine/commit/176a93ef611913930a3115ae999c0bf1fa04d0ee))
+
+
+### Features
+
+* add cors to server ([a1a4c93](https://github.com/Chia-Network/climate-tokenization-engine/commit/a1a4c93d2b978eaf68649d58cf577783ab8a5ab9))
+* all external services have optional api key appended ([c843ff4](https://github.com/Chia-Network/climate-tokenization-engine/commit/c843ff44470fd05f24706f1ecf57d6a6c580dcbf))
+* configure unified config ([b4a7e0f](https://github.com/Chia-Network/climate-tokenization-engine/commit/b4a7e0f93e0584ca70e7e6e1d1c2e0f830e7db9d))
+* fully refactored ([52f7a9d](https://github.com/Chia-Network/climate-tokenization-engine/commit/52f7a9def804f3decbff90d4721ad159007beb9e))
+* override default config to allow unverified certs ([f5d18f7](https://github.com/Chia-Network/climate-tokenization-engine/commit/f5d18f711c9e381d9d126fb35ebafd62d922e4e7))
+* refactor proxy endpoints ([172804e](https://github.com/Chia-Network/climate-tokenization-engine/commit/172804e1c913ebd22cc6f2aa962080bc9803160a))
+* set up controllers for testing ([f9101fb](https://github.com/Chia-Network/climate-tokenization-engine/commit/f9101fbb7fccf7dc71105705c0da1fa4fb1aa349))
+* stop server gracefully during tests ([d2607c3](https://github.com/Chia-Network/climate-tokenization-engine/commit/d2607c3ecfcb04fbcb2099b7820c60de160c9c36))
+
+
+
 ## [1.3.10](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.9...1.3.10) (2023-09-20)
 
 
