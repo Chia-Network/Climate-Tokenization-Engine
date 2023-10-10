@@ -47,6 +47,7 @@ const job = new SimpleIntervalJob(
 const startSyncRetirementsTask = async () => {
   await registry.waitForRegistryDataSync();
   const homeOrg = await registry.getHomeOrg();
+
   if (!homeOrg) {
     logger.warn(
       "Can not attain home organization from the registry, skipping sync-retirements task"
@@ -62,7 +63,7 @@ const startSyncRetirementsTask = async () => {
     return;
   }
 
-  await getAndProcessActivities(lastProcessedHeight);
+  await getAndProcessActivities(homeOrg, lastProcessedHeight);
 };
 
 /**
@@ -70,7 +71,7 @@ const startSyncRetirementsTask = async () => {
  * @param {number} minHeight - Minimum block height to start.
  * @returns {Promise<void>}
  */
-const getAndProcessActivities = async (minHeight = 0) => {
+const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
   try {
     let page = 1;
     const limit = 10;
@@ -86,12 +87,17 @@ const getAndProcessActivities = async (minHeight = 0) => {
       }
 
       for (const activity of retirements) {
-        await processResult({
-          marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
-          amount: activity.amount / 1000,
-          beneficiaryName: activity.beneficiary_name,
-          beneficiaryAddress: activity.beneficiary_address,
-        });
+        // You can only autoretire your own units
+        console.log(activity?.token?.org_uid, homeOrg.orgUid);
+        if (activity?.token?.org_uid === homeOrg.orgUid) {
+          logger.info(`PROCESSING RETIREMENT ACTIVITY: ${activity.coin_id}`);
+          await processResult({
+            marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
+            amount: activity.amount / 1000,
+            beneficiaryName: activity.beneficiary_name,
+            beneficiaryAddress: activity.beneficiary_address,
+          });
+        }
       }
 
       const highestHeight = calcHighestActivityHeight(retirements);

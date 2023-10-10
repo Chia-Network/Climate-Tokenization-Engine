@@ -5,6 +5,8 @@ const registry = require("../../src/api/registry");
 const { logger } = require("../../src/logger");
 const wallet = require("../../src/chia/wallet");
 const retirementExplorer = require("../../src/api/retirement-explorer");
+const ActivityResponseMock = require("../data/ActivityResponseMock");
+const HomeOrgMock = require("../data/HomeOrgMock");
 
 describe("Task: Sync Retirements", () => {
   let retirementExplorerGetRetirementActivitiesStub;
@@ -12,6 +14,7 @@ describe("Task: Sync Retirements", () => {
   let registryRetireUnitStub;
   let registrySplitUnitStub;
   let registryCommitStagingDataStub;
+  let registryGetHomeOrgStub;
 
   beforeEach(() => {
     retirementExplorerGetRetirementActivitiesStub = sinon
@@ -28,6 +31,10 @@ describe("Task: Sync Retirements", () => {
       .stub(registry, "commitStagingData")
       .resolves();
 
+    registryGetHomeOrgStub = sinon
+      .stub(registry, "getHomeOrg")
+      .resolves(HomeOrgMock);
+
     sinon.stub(wallet, "waitForAllTransactionsToConfirm").resolves();
     sinon.stub(registry, "waitForRegistryDataSync").resolves();
   });
@@ -37,7 +44,7 @@ describe("Task: Sync Retirements", () => {
   });
 
   it("skips retirement task if no homeorg can be attained by the registry", async () => {
-    sinon.stub(registry, "getHomeOrg").resolves(null);
+    registryGetHomeOrgStub.resolves(null);
 
     const warnSpy = sinon.spy(logger, "warn");
 
@@ -55,7 +62,6 @@ describe("Task: Sync Retirements", () => {
   });
 
   it("skips retirement task if the last processed retirement height can not be attained by the registry", async () => {
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
     sinon.stub(registry, "getLastProcessedHeight").resolves(null);
 
     const warnSpy = sinon.spy(logger, "warn");
@@ -75,7 +81,7 @@ describe("Task: Sync Retirements", () => {
 
   it("starts processing activities if valid homeorg and lastProcessedHeight can be attained by the registry", async () => {
     // Stub registry methods
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
+
     sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
 
     // Spy on logger.warn method
@@ -90,6 +96,33 @@ describe("Task: Sync Retirements", () => {
 
     // expecting this to be false because the stub is not returning any activities
     expect(registrySetLastProcessedHeightStub.called).to.be.false;
+  });
+
+  it("skips processing activities that are not from your home org", async () => {
+    const modifiedHomeOrg = Object.assign({}, HomeOrgMock);
+    modifiedHomeOrg.orgUid = "DIFFERENT_ORG_UID";
+    registryGetHomeOrgStub.resolves(modifiedHomeOrg);
+
+    // Stub registry methods
+    let registryGetAssetUnitBlocksStub = sinon.stub(registry, "getAssetUnitBlocks");
+    sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
+    retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves(ActivityResponseMock.activities);
+    retirementExplorerGetRetirementActivitiesStub.onSecondCall().resolves([]);
+
+    // Spy on logger.warn method
+    const warnSpy = sinon.spy(logger, "warn");
+
+    // Run the method under test
+    await syncRetirements.startSyncRetirementsTask();
+
+    // Perform assertions
+    expect(warnSpy.called).to.be.false;
+    expect(retirementExplorerGetRetirementActivitiesStub.called).to.be.true;
+
+    expect(registryGetAssetUnitBlocksStub.called).to.be.false;
+
+    // expecting this to be true because the stub is returning activities even though none are processed
+    expect(registrySetLastProcessedHeightStub.called).to.be.true;
   });
 
   it("Does not run the task if the task is already running", () => {
@@ -107,7 +140,6 @@ describe("Task: Sync Retirements", () => {
   });
 
   it("does not set last processed height if there are no units to retire", async () => {
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
     sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
 
     retirementExplorerGetRetirementActivitiesStub.restore();
@@ -125,6 +157,9 @@ describe("Task: Sync Retirements", () => {
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },
+        token: {
+          org_uid: HomeOrgMock.orgUid,
+        },
       },
       {
         amount: 5000,
@@ -133,6 +168,9 @@ describe("Task: Sync Retirements", () => {
         height: 12346,
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
+        },
+        token: {
+          org_uid: HomeOrgMock.orgUid,
         },
       },
     ]);
@@ -169,7 +207,6 @@ describe("Task: Sync Retirements", () => {
   it("sets the post body fields correctly when requesting retirement activities", async () => {
     const lastProcessedHeightMock = 12345;
 
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
     sinon
       .stub(registry, "getLastProcessedHeight")
       .resolves(lastProcessedHeightMock);
@@ -187,7 +224,6 @@ describe("Task: Sync Retirements", () => {
   it("Does not process activities that are marked as already retired", () => {});
 
   it("Retires all units when amount is greater than the amount of units available for the unit block", async () => {
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
     sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
 
     retirementExplorerGetRetirementActivitiesStub.restore();
@@ -204,6 +240,9 @@ describe("Task: Sync Retirements", () => {
         height: 99999,
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
+        },
+        token: {
+          org_uid: HomeOrgMock.orgUid,
         },
       },
     ]);
@@ -232,7 +271,6 @@ describe("Task: Sync Retirements", () => {
   });
 
   it("Splits the unit block when the amount is less than the amount of units available for the unit block", async () => {
-    sinon.stub(registry, "getHomeOrg").resolves("TEST_HOME_ORG_UID");
     sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
 
     retirementExplorerGetRetirementActivitiesStub.restore();
@@ -250,6 +288,9 @@ describe("Task: Sync Retirements", () => {
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },
+        token: {
+          org_uid: HomeOrgMock.orgUid,
+        },
       },
       {
         amount: 5000,
@@ -258,6 +299,9 @@ describe("Task: Sync Retirements", () => {
         height: 12344,
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
+        },
+        token: {
+          org_uid: HomeOrgMock.orgUid,
         },
       },
     ]);
@@ -298,7 +342,7 @@ describe("Task: Sync Retirements", () => {
     );
 
     expect(registryRetireUnitStub.calledOnce).to.be.true;
-    
+
     expect(registryRetireUnitStub.args[0][0]).to.equal(unretiredUnitAfterSplit);
     expect(registryRetireUnitStub.args[0][1]).to.equal("TEST_BENEFICIARY_NAME");
     expect(registryRetireUnitStub.args[0][2]).to.equal(
