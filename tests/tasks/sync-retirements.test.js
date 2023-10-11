@@ -121,8 +121,8 @@ describe("Task: Sync Retirements", () => {
 
     expect(registryGetAssetUnitBlocksStub.called).to.be.false;
 
-    // expecting this to be true because the stub is returning activities even though none are processed
-    expect(registrySetLastProcessedHeightStub.called).to.be.true;
+    // expecting this to be false because we didnt get any activities from our home org
+    expect(registrySetLastProcessedHeightStub.called).to.be.false;
   });
 
   it("Does not run the task if the task is already running", () => {
