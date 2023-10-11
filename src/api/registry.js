@@ -530,8 +530,8 @@ const waitForRegistryDataSync = async () => {
   await utils.waitFor(5000);
   const dataLayerConfig = {};
 
-  if (CONFIG().CHIA.DATA_LAYER_HOST) {
-    dataLayerConfig.datalayer_host = CONFIG().CHIA.DATA_LAYER_HOST;
+  if (CONFIG().CHIA.DATALAYER_HOST) {
+    dataLayerConfig.datalayer_host = CONFIG().CHIA.DATALAYER_HOST;
   }
 
   if (CONFIG().CHIA.WALLET_HOST) {
