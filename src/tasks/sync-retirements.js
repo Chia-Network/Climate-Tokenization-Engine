@@ -45,25 +45,29 @@ const job = new SimpleIntervalJob(
  * @returns {Promise<void>}
  */
 const startSyncRetirementsTask = async () => {
-  await registry.waitForRegistryDataSync();
-  const homeOrg = await registry.getHomeOrg();
+  try {
+    await registry.waitForRegistryDataSync({ throwOnEmptyRegistry: true });
+    const homeOrg = await registry.getHomeOrg();
 
-  if (!homeOrg) {
-    logger.warn(
-      "Can not attain home organization from the registry, skipping sync-retirements task"
-    );
-    return;
+    if (!homeOrg) {
+      logger.warn(
+        "Can not attain home organization from the registry, skipping sync-retirements task"
+      );
+      return;
+    }
+
+    const lastProcessedHeight = await registry.getLastProcessedHeight();
+    if (lastProcessedHeight == null) {
+      logger.warn(
+        "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
+      );
+      return;
+    }
+
+    await getAndProcessActivities(homeOrg, lastProcessedHeight);
+  } catch (error) {
+    logger.error(`Error in sync-retirements task: ${error.message}`);
   }
-
-  const lastProcessedHeight = await registry.getLastProcessedHeight();
-  if (lastProcessedHeight == null) {
-    logger.warn(
-      "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
-    );
-    return;
-  }
-
-  await getAndProcessActivities(homeOrg, lastProcessedHeight);
 };
 
 /**

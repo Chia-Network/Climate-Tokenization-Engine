@@ -4,6 +4,7 @@ const { CONFIG } = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
 const utils = require("../utils");
+const constants = require("../constants");
 
 const registryUri = utils.generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
@@ -243,7 +244,7 @@ const getHomeOrg = async () => {
 
     const homeOrg = orgArray.find((org) => org.isHome) || null;
 
-    if (homeOrg.orgUid === 'PENDING') {
+    if (homeOrg.orgUid === "PENDING") {
       return null;
     }
 
@@ -528,7 +529,11 @@ const getOrgMetaData = async (orgUid) => {
  *
  * @returns {Promise<void>}
  */
-const waitForRegistryDataSync = async () => {
+const waitForRegistryDataSync = async (options = {}) => {
+  if (!options.throwOnEmptyRegistry) {
+    options.throwOnEmptyRegistry = false;
+  }
+
   if (process.env.NODE_ENV === "test") {
     return;
   }
@@ -571,6 +576,15 @@ const waitForRegistryDataSync = async () => {
   if (!onChainRegistryRoot.confirmed) {
     console.log("Waiting for Registry root to confirm");
     return waitForRegistryDataSync();
+  }
+
+  if (
+    onChainRegistryRoot.hash === constants.emptySingletonHash &&
+    options.throwOnEmptyRegistry
+  ) {
+    throw new Error(
+      "Registry is empty. Please add some data to run auto retirement task."
+    );
   }
 
   if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
