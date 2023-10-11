@@ -69,6 +69,7 @@ const sanitizeUnitForUpdate = (unit) => {
   delete cleanedUnit.issuanceId;
   delete cleanedUnit.orgUid;
   delete cleanedUnit.serialNumberBlock;
+  delete cleanedUnit.timeStaged;
 
   Object.keys(cleanedUnit).forEach((key) => {
     if (cleanedUnit[key] === null) {
