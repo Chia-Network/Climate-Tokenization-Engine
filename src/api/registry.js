@@ -190,7 +190,7 @@ const getLastProcessedHeight = async () => {
     }
 
     return response.status === 200
-      ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
+      ? Number(response.body["lastRetiredBlockHeight"] || 0)
       : null;
   } catch (error) {
     logger.error(`Could not get last processed height: ${error.message}`);
