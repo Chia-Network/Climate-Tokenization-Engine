@@ -5,7 +5,7 @@
   "description": "",
   "main": "proxy.js",
   "scripts": {
-    "test": "jest --detectOpenHandles",
+    "test": "jest --forceExit",
     "test-ci": "jest --ci",
     "start": "node --no-warnings src/server.js",
     "prepare-binary": "rm -rf dist && mkdir dist",
@@ -31,6 +31,7 @@
   "dependencies": {
     "@chia-carbon/core-registry-config": "^1.0.2",
     "@chia-carbon/core-registry-logger": "^1.0.11",
+    "async-mutex": "^0.4.0",
     "body-parser": "^1.20.2",
     "chia-datalayer": "^2.0.0",
     "chia-root-resolver": "^1.0.0",
