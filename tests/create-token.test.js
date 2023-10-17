@@ -49,9 +49,10 @@ describe("Create Token Process", () => {
       .resolves(true);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     sinon.restore();
     nock.cleanAll();
+    await new Promise(resolve => setTimeout(() => resolve(), 1000));
   });
 
   afterAll(async () => {
