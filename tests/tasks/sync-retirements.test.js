@@ -39,8 +39,9 @@ describe("Task: Sync Retirements", () => {
     sinon.stub(registry, "waitForRegistryDataSync").resolves();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     sinon.restore();
+    await new Promise(resolve => setTimeout(() => resolve(), 1000));
   });
 
   it("skips retirement task if no homeorg can be attained by the registry", async () => {
@@ -121,8 +122,8 @@ describe("Task: Sync Retirements", () => {
 
     expect(registryGetAssetUnitBlocksStub.called).to.be.false;
 
-    // expecting this to be true because the stub is returning activities even though none are processed
-    expect(registrySetLastProcessedHeightStub.called).to.be.true;
+    // expecting this to be false because we didnt get any activities from our home org
+    expect(registrySetLastProcessedHeightStub.called).to.be.false;
   });
 
   it("Does not run the task if the task is already running", () => {
