@@ -538,6 +538,8 @@ const getOrgMetaData = async (orgUid) => {
 const waitForRegistryDataSync = async (options = {}) => {
   await mutex.waitForUnlock();
 
+  let isFirstSyncAfterFailure = false;
+
   if (!mutex.isLocked()) {
     const releaseMutex = await mutex.acquire();
     try {
@@ -565,6 +567,7 @@ const waitForRegistryDataSync = async (options = {}) => {
           logger.warn(
             "Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
           );
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
@@ -573,7 +576,8 @@ const waitForRegistryDataSync = async (options = {}) => {
         });
 
         if (!onChainRegistryRoot.confirmed) {
-          console.log("Waiting for Registry root to confirm");
+          logger.debug("Waiting for Registry root to confirm");
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
@@ -587,32 +591,43 @@ const waitForRegistryDataSync = async (options = {}) => {
         }
 
         if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-          console.log(
-            "Waiting for Registry to sync with latest registry root.",
-            {
+          logger.debug(
+            `Waiting for Registry to sync with latest registry root.
+            ${JSON.stringify({
               onChainRoot: onChainRegistryRoot.hash,
               homeOrgRegistryRoot: homeOrg.registryHash,
-            }
+            }, null, 2)}`
           );
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
         const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
 
         if (!onChainOrgRoot.confirmed) {
-          console.log("Waiting for Organization root to confirm");
+          logger.debug("Waiting for Organization root to confirm");
           continue;
         }
 
         if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-          console.log(
-            "Waiting for Registry to sync with latest organization root.",
-            {
-              onChainRoot: onChainOrgRoot.hash,
-              homeOrgRoot: homeOrg.orgHash,
-            }
+          logger.debug(
+            `Waiting for Registry to sync with latest organization root. ,
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainOrgRoot.hash,
+                homeOrgRoot: homeOrg.orgHash,
+              },
+              null,
+              2
+            )}`
           );
+          isFirstSyncAfterFailure = true;
           continue;
+        }
+
+        // Log the message if conditions are met for the first time after failure
+        if (isFirstSyncAfterFailure) {
+          logger.info("CADT is SYNCED! Proceeding with the task.");
         }
 
         // Exit the loop if all conditions are met
