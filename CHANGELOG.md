@@ -1,3 +1,20 @@
+## [1.3.12](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.11...1.3.12) (2023-10-17)
+
+
+### Bug Fixes
+
+* DATA_LAYER_HOST should be DATALAYER_HOST ([5555c8e](https://github.com/Chia-Network/climate-tokenization-engine/commit/5555c8eeb72074ebf3c77746574081fe722e7c69))
+* dont return homeorg when in pending status ([7f828a4](https://github.com/Chia-Network/climate-tokenization-engine/commit/7f828a4bb7d9a8c9d870bae4a111ef0fc2a14087))
+* dont write last processed height when you didnt process retirements ([ef245da](https://github.com/Chia-Network/climate-tokenization-engine/commit/ef245da3783ff4c8f3d450741705f7efa23dcff0))
+* optional handling on empty registry ([0160690](https://github.com/Chia-Network/climate-tokenization-engine/commit/01606907eb4a436b7f2729fc6cf1d9c3d98909e6))
+
+
+### Features
+
+* add mutex to wait for cadt sync to prevent stack buildup ([9336d32](https://github.com/Chia-Network/climate-tokenization-engine/commit/9336d325c33439b421d6cb9bfc2acaa11f64139c))
+
+
+
 ## [1.3.11](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.10...1.3.11) (2023-10-10)
 
 
