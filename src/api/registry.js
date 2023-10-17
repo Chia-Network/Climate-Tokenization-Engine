@@ -5,6 +5,9 @@ const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
 const utils = require("../utils");
 const constants = require("../constants");
+const { Mutex } = require("async-mutex");
+
+const mutex = new Mutex();
 
 const registryUri = utils.generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
@@ -528,87 +531,81 @@ const getOrgMetaData = async (orgUid) => {
 /**
  * Waits for the registry data to synchronize.
  *
+ * @param {object} [options] - Function options.
+ * @param {boolean} [options.throwOnEmptyRegistry=false] - Flag to throw error on empty registry.
  * @returns {Promise<void>}
  */
 const waitForRegistryDataSync = async (options = {}) => {
-  if (!options.throwOnEmptyRegistry) {
-    options.throwOnEmptyRegistry = false;
-  }
+  await mutex.waitForUnlock();
 
-  if (process.env.NODE_ENV === "test") {
-    return;
-  }
+  if (!mutex.isLocked()) {
+    const releaseMutex = await mutex.acquire();
+    try {
+      const opts = { throwOnEmptyRegistry: false, ...options };
 
-  await utils.waitFor(5000);
-  const dataLayerConfig = {};
+      if (process.env.NODE_ENV === "test") {
+        return;
+      }
 
-  if (CONFIG().CHIA.DATALAYER_HOST) {
-    dataLayerConfig.datalayer_host = CONFIG().CHIA.DATALAYER_HOST;
-  }
+      while (true) {
+        await utils.waitFor(5000);
 
-  if (CONFIG().CHIA.WALLET_HOST) {
-    dataLayerConfig.wallet_host = CONFIG().CHIA.WALLET_HOST;
-  }
+        const config = CONFIG().CHIA;
+        const dataLayerConfig = {
+          datalayer_host: config.DATALAYER_HOST,
+          wallet_host: config.WALLET_HOST,
+          certificate_folder_path: config.CERTIFICATE_FOLDER_PATH,
+          allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
+        };
 
-  if (CONFIG().CHIA.CERTIFICATE_FOLDER_PATH) {
-    dataLayerConfig.certificate_folder_path =
-      CONFIG().CHIA.CERTIFICATE_FOLDER_PATH;
-  }
+        const datalayer = new Datalayer(dataLayerConfig);
+        const homeOrg = await getHomeOrg();
 
-  if (CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES) {
-    dataLayerConfig.allowUnverifiedCert =
-      CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES;
-  }
+        if (!homeOrg) {
+          logger.warn("Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization.");
+          continue;
+        }
 
-  const datalayer = new Datalayer(dataLayerConfig);
-  const homeOrg = await getHomeOrg();
+        const onChainRegistryRoot = await datalayer.getRoot({ id: homeOrg.registryId });
 
-  if (!homeOrg) {
-    logger.warn(
-      "Can not find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
-    );
-    return waitForRegistryDataSync();
-  }
+        if (!onChainRegistryRoot.confirmed) {
+          console.log("Waiting for Registry root to confirm");
+          continue;
+        }
 
-  const onChainRegistryRoot = await datalayer.getRoot({
-    id: homeOrg.registryId,
-  });
+        if (onChainRegistryRoot.hash === constants.emptySingletonHash && opts.throwOnEmptyRegistry) {
+          throw new Error("Registry is empty. Please add some data to run auto retirement task.");
+        }
 
-  if (!onChainRegistryRoot.confirmed) {
-    console.log("Waiting for Registry root to confirm");
-    return waitForRegistryDataSync();
-  }
+        if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
+          console.log("Waiting for Registry to sync with latest registry root.", {
+            onChainRoot: onChainRegistryRoot.hash,
+            homeOrgRegistryRoot: homeOrg.registryHash,
+          });
+          continue;
+        }
 
-  if (
-    onChainRegistryRoot.hash === constants.emptySingletonHash &&
-    options.throwOnEmptyRegistry
-  ) {
-    throw new Error(
-      "Registry is empty. Please add some data to run auto retirement task."
-    );
-  }
+        const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
 
-  if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-    console.log("Waiting for Registry to sync with latest regisry root.", {
-      onChainRoot: onChainRegistryRoot.hash,
-      homeOrgRegistryRoot: homeOrg.registryHash,
-    });
-    return waitForRegistryDataSync();
-  }
+        if (!onChainOrgRoot.confirmed) {
+          console.log("Waiting for Organization root to confirm");
+          continue;
+        }
 
-  const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
+        if (onChainOrgRoot.hash !== homeOrg.orgHash) {
+          console.log("Waiting for Registry to sync with latest organization root.", {
+            onChainRoot: onChainOrgRoot.hash,
+            homeOrgRoot: homeOrg.orgHash,
+          });
+          continue;
+        }
 
-  if (!onChainOrgRoot.confirmed) {
-    console.log("Waiting for Organization root to confirm");
-    return waitForRegistryDataSync();
-  }
-
-  if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-    console.log("Waiting for Registry to sync with latest organization root.", {
-      onChainRoot: onChainOrgRoot.hash,
-      homeOrgRoot: homeOrg.orgHash,
-    });
-    return waitForRegistryDataSync();
+        // Exit the loop if all conditions are met
+        break;
+      }
+    } finally {
+      releaseMutex();
+    }
   }
 };
 

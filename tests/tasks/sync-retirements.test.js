@@ -39,8 +39,9 @@ describe("Task: Sync Retirements", () => {
     sinon.stub(registry, "waitForRegistryDataSync").resolves();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     sinon.restore();
+    await new Promise(resolve => setTimeout(() => resolve(), 1000));
   });
 
   it("skips retirement task if no homeorg can be attained by the registry", async () => {
