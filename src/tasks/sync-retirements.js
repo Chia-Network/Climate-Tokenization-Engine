@@ -45,25 +45,29 @@ const job = new SimpleIntervalJob(
  * @returns {Promise<void>}
  */
 const startSyncRetirementsTask = async () => {
-  await registry.waitForRegistryDataSync();
-  const homeOrg = await registry.getHomeOrg();
+  try {
+    await registry.waitForRegistryDataSync({ throwOnEmptyRegistry: true });
+    const homeOrg = await registry.getHomeOrg();
 
-  if (!homeOrg) {
-    logger.warn(
-      "Can not attain home organization from the registry, skipping sync-retirements task"
-    );
-    return;
+    if (!homeOrg) {
+      logger.warn(
+        "Can not attain home organization from the registry, skipping sync-retirements task"
+      );
+      return;
+    }
+
+    const lastProcessedHeight = await registry.getLastProcessedHeight();
+    if (lastProcessedHeight == null) {
+      logger.warn(
+        "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
+      );
+      return;
+    }
+
+    await getAndProcessActivities(homeOrg, lastProcessedHeight);
+  } catch (error) {
+    logger.error(`Error in sync-retirements task: ${error.message}`);
   }
-
-  const lastProcessedHeight = await registry.getLastProcessedHeight();
-  if (lastProcessedHeight == null) {
-    logger.warn(
-      "Can not attain the last Processed Retirement Height from the registry, skipping sync-retirements task"
-    );
-    return;
-  }
-
-  await getAndProcessActivities(homeOrg, lastProcessedHeight);
 };
 
 /**
@@ -82,22 +86,23 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         minHeight
       );
 
-      if (!retirements.length) {
+      const ownedRetirements = retirements.filter(
+        (activity) => activity?.token?.org_uid === homeOrg.orgUid
+      );
+
+      if (!ownedRetirements.length) {
         break;
       }
 
-      for (const activity of retirements) {
+      for (const activity of ownedRetirements) {
         // You can only autoretire your own units
-        console.log(activity?.token?.org_uid, homeOrg.orgUid);
-        if (activity?.token?.org_uid === homeOrg.orgUid) {
-          logger.info(`PROCESSING RETIREMENT ACTIVITY: ${activity.coin_id}`);
-          await processResult({
-            marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
-            amount: activity.amount / 1000,
-            beneficiaryName: activity.beneficiary_name,
-            beneficiaryAddress: activity.beneficiary_address,
-          });
-        }
+        logger.info(`PROCESSING RETIREMENT ACTIVITY: ${activity.coin_id}`);
+        await processResult({
+          marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
+          amount: activity.amount / 1000,
+          beneficiaryName: activity.beneficiary_name,
+          beneficiaryAddress: activity.beneficiary_address,
+        });
       }
 
       const highestHeight = calcHighestActivityHeight(retirements);

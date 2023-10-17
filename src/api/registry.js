@@ -4,7 +4,7 @@ const { CONFIG } = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
 const utils = require("../utils");
-const constants = require("../constants.js");
+const constants = require("../constants");
 const { Mutex } = require("async-mutex");
 
 const mutex = new Mutex();
@@ -72,6 +72,7 @@ const sanitizeUnitForUpdate = (unit) => {
   delete cleanedUnit.issuanceId;
   delete cleanedUnit.orgUid;
   delete cleanedUnit.serialNumberBlock;
+  delete cleanedUnit.timeStaged;
 
   Object.keys(cleanedUnit).forEach((key) => {
     if (cleanedUnit[key] === null) {
@@ -245,7 +246,13 @@ const getHomeOrg = async () => {
       (key) => response.body[key]
     );
 
-    return orgArray.find((org) => org.isHome) || null;
+    const homeOrg = orgArray.find((org) => org.isHome) || null;
+
+    if (homeOrg.orgUid === "PENDING") {
+      return null;
+    }
+
+    return homeOrg;
   } catch (error) {
     logger.error(`Could not get home org: ${error.message}`);
 
