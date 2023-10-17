@@ -555,26 +555,38 @@ const waitForRegistryDataSync = async (options = {}) => {
         const homeOrg = await getHomeOrg();
 
         if (!homeOrg) {
-          logger.warn("Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization.");
+          logger.warn(
+            "Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
+          );
           continue;
         }
 
-        const onChainRegistryRoot = await datalayer.getRoot({ id: homeOrg.registryId });
+        const onChainRegistryRoot = await datalayer.getRoot({
+          id: homeOrg.registryId,
+        });
 
         if (!onChainRegistryRoot.confirmed) {
           console.log("Waiting for Registry root to confirm");
           continue;
         }
 
-        if (onChainRegistryRoot.hash === constants.emptySingletonHash && opts.throwOnEmptyRegistry) {
-          throw new Error("Registry is empty. Please add some data to run auto retirement task.");
+        if (
+          onChainRegistryRoot.hash === constants.emptySingletonHash &&
+          opts.throwOnEmptyRegistry
+        ) {
+          throw new Error(
+            "Registry is empty. Please add some data to run auto retirement task."
+          );
         }
 
         if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-          console.log("Waiting for Registry to sync with latest registry root.", {
-            onChainRoot: onChainRegistryRoot.hash,
-            homeOrgRegistryRoot: homeOrg.registryHash,
-          });
+          console.log(
+            "Waiting for Registry to sync with latest registry root.",
+            {
+              onChainRoot: onChainRegistryRoot.hash,
+              homeOrgRegistryRoot: homeOrg.registryHash,
+            }
+          );
           continue;
         }
 
@@ -586,10 +598,13 @@ const waitForRegistryDataSync = async (options = {}) => {
         }
 
         if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-          console.log("Waiting for Registry to sync with latest organization root.", {
-            onChainRoot: onChainOrgRoot.hash,
-            homeOrgRoot: homeOrg.orgHash,
-          });
+          console.log(
+            "Waiting for Registry to sync with latest organization root.",
+            {
+              onChainRoot: onChainOrgRoot.hash,
+              homeOrgRoot: homeOrg.orgHash,
+            }
+          );
           continue;
         }
 
