@@ -1,3 +1,17 @@
+## [1.3.13](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.12...1.3.13) (2023-10-18)
+
+
+### Bug Fixes
+
+* dont process unit retirements when unit count is nan ([5e3ceac](https://github.com/Chia-Network/climate-tokenization-engine/commit/5e3ceac8974ac540c70ef5fda45bc226d24ee065))
+
+
+### Features
+
+* logging for zach ([b52b906](https://github.com/Chia-Network/climate-tokenization-engine/commit/b52b906a3b079f8b5f95e4212d6f75d0e2be213b))
+
+
+
 ## [1.3.12](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.11...1.3.12) (2023-10-17)
 
 
