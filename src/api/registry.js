@@ -135,6 +135,8 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
     cleanedUnit.unitStatusReason = beneficiaryAddress;
   }
   cleanedUnit.unitStatus = "Retired";
+
+  logger.info(`Retiring whole unit ${unit.warehouseUnitId}`);
   return await updateUnit(cleanedUnit);
 };
 
@@ -593,10 +595,14 @@ const waitForRegistryDataSync = async (options = {}) => {
         if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
           logger.debug(
             `Waiting for Registry to sync with latest registry root.
-            ${JSON.stringify({
-              onChainRoot: onChainRegistryRoot.hash,
-              homeOrgRegistryRoot: homeOrg.registryHash,
-            }, null, 2)}`
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainRegistryRoot.hash,
+                homeOrgRegistryRoot: homeOrg.registryHash,
+              },
+              null,
+              2
+            )}`
           );
           isFirstSyncAfterFailure = true;
           continue;
@@ -703,11 +709,8 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   }
 };
 
-/**
- * Placeholder function for deleting staging data.
- */
-const deleteStagingData = async () => {
-  console.log("Not implemented");
+const deleteStagingData = () => {
+  return superagent.delete(`${registryUri}/v1/staging/clean`);
 };
 
 const splitUnit = async ({
@@ -716,14 +719,7 @@ const splitUnit = async ({
   beneficiaryName,
   beneficiaryAddress,
 }) => {
-  console.log(
-    "Splitting unit",
-    JSON.stringify({
-      amount,
-      beneficiaryName,
-      beneficiaryAddress,
-    })
-  );
+  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`)
 
   // Parse the serialNumberBlock
   const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(
