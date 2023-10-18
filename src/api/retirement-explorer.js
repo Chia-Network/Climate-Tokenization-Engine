@@ -49,7 +49,13 @@ const getRetirementActivities = async (page, limit, minHeight) => {
       );
     }
 
-    return response.body?.activities || [];
+    const activities = response.body?.activities || [];
+
+    const retirements = activities?.filter(
+      (activity) => activity.mode === "PERMISSIONLESS_RETIREMENT"
+    );
+
+    return retirements;
   } catch (error) {
     logger.error("Cannot get retirement activities", error);
 
