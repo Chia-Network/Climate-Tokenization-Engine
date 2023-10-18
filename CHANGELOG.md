@@ -1,3 +1,12 @@
+## [1.3.14](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.13...1.3.14) (2023-10-18)
+
+
+### Bug Fixes
+
+* dont process tokenization activitiies as retirements ([f06a424](https://github.com/Chia-Network/climate-tokenization-engine/commit/f06a4246b291137759da446c048cac10cf5baba2))
+
+
+
 ## [1.3.13](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.12...1.3.13) (2023-10-18)
 
 
