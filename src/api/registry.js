@@ -135,6 +135,8 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
     cleanedUnit.unitStatusReason = beneficiaryAddress;
   }
   cleanedUnit.unitStatus = "Retired";
+
+  logger.info(`Retiring whole unit ${unit.warehouseUnitId}`);
   return await updateUnit(cleanedUnit);
 };
 
@@ -538,6 +540,8 @@ const getOrgMetaData = async (orgUid) => {
 const waitForRegistryDataSync = async (options = {}) => {
   await mutex.waitForUnlock();
 
+  let isFirstSyncAfterFailure = false;
+
   if (!mutex.isLocked()) {
     const releaseMutex = await mutex.acquire();
     try {
@@ -562,42 +566,74 @@ const waitForRegistryDataSync = async (options = {}) => {
         const homeOrg = await getHomeOrg();
 
         if (!homeOrg) {
-          logger.warn("Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization.");
+          logger.warn(
+            "Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
+          );
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
-        const onChainRegistryRoot = await datalayer.getRoot({ id: homeOrg.registryId });
+        const onChainRegistryRoot = await datalayer.getRoot({
+          id: homeOrg.registryId,
+        });
 
         if (!onChainRegistryRoot.confirmed) {
-          console.log("Waiting for Registry root to confirm");
+          logger.debug("Waiting for Registry root to confirm");
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
-        if (onChainRegistryRoot.hash === constants.emptySingletonHash && opts.throwOnEmptyRegistry) {
-          throw new Error("Registry is empty. Please add some data to run auto retirement task.");
+        if (
+          onChainRegistryRoot.hash === constants.emptySingletonHash &&
+          opts.throwOnEmptyRegistry
+        ) {
+          throw new Error(
+            "Registry is empty. Please add some data to run auto retirement task."
+          );
         }
 
         if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-          console.log("Waiting for Registry to sync with latest registry root.", {
-            onChainRoot: onChainRegistryRoot.hash,
-            homeOrgRegistryRoot: homeOrg.registryHash,
-          });
+          logger.debug(
+            `Waiting for Registry to sync with latest registry root.
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainRegistryRoot.hash,
+                homeOrgRegistryRoot: homeOrg.registryHash,
+              },
+              null,
+              2
+            )}`
+          );
+          isFirstSyncAfterFailure = true;
           continue;
         }
 
         const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
 
         if (!onChainOrgRoot.confirmed) {
-          console.log("Waiting for Organization root to confirm");
+          logger.debug("Waiting for Organization root to confirm");
           continue;
         }
 
         if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-          console.log("Waiting for Registry to sync with latest organization root.", {
-            onChainRoot: onChainOrgRoot.hash,
-            homeOrgRoot: homeOrg.orgHash,
-          });
+          logger.debug(
+            `Waiting for Registry to sync with latest organization root. ,
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainOrgRoot.hash,
+                homeOrgRoot: homeOrg.orgHash,
+              },
+              null,
+              2
+            )}`
+          );
+          isFirstSyncAfterFailure = true;
           continue;
+        }
+
+        // Log the message if conditions are met for the first time after failure
+        if (isFirstSyncAfterFailure) {
+          logger.info("CADT is SYNCED! Proceeding with the task.");
         }
 
         // Exit the loop if all conditions are met
@@ -673,11 +709,8 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   }
 };
 
-/**
- * Placeholder function for deleting staging data.
- */
-const deleteStagingData = async () => {
-  console.log("Not implemented");
+const deleteStagingData = () => {
+  return superagent.delete(`${registryUri}/v1/staging/clean`);
 };
 
 const splitUnit = async ({
@@ -686,14 +719,7 @@ const splitUnit = async ({
   beneficiaryName,
   beneficiaryAddress,
 }) => {
-  console.log(
-    "Splitting unit",
-    JSON.stringify({
-      amount,
-      beneficiaryName,
-      beneficiaryAddress,
-    })
-  );
+  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`)
 
   // Parse the serialNumberBlock
   const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(

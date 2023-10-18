@@ -188,6 +188,18 @@ const processUnits = async (
       break;
     }
     const { unitCount } = unit;
+
+    if (isNaN(unitCount)) {
+      logger.error(
+        `unitCount for unit ${unit.warehouseUnitId} is not a number. Skipping this unit.`
+      );
+      break;
+    } else {
+      logger.task(
+        `Retiring ${unitCount} units for ${unit.warehouseUnitId} with ${remainingAmountToRetire} remaining`
+      );
+    }
+
     if (unitCount <= remainingAmountToRetire) {
       await registry.retireUnit(unit, beneficiaryName, beneficiaryAddress);
       remainingAmountToRetire -= unitCount;
@@ -202,6 +214,7 @@ const processUnits = async (
     }
     await wallet.waitForAllTransactionsToConfirm();
   }
+  
   return remainingAmountToRetire;
 };
 
