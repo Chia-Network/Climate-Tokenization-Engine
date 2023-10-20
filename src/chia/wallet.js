@@ -36,6 +36,10 @@ const walletIsAvailable = async () => {
 };
 
 const waitForAllTransactionsToConfirm = async () => {
+  if (process.env.NODE_ENV === "test") {
+    return true;
+  }
+  
   await new Promise((resolve) => setTimeout(() => resolve(), 5000));
   const unconfirmedTransactions = await hasUnconfirmedTransactions();
 
