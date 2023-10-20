@@ -374,61 +374,53 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
 };
 
 /**
- * Registers token creation on the registry.
- *
- * @async
- * @function
- * @param {Object} token - The token to register.
- * @param {string} warehouseUnitId - The warehouse unit ID.
- * @returns {Promise<Object|null>} Returns a Promise that resolves to the response body if successful, or null if an error occurs.
- * @throws {Error} Throws an error if the Registry API key is invalid.
+ * Registers a token creation on the registry.
+ * 
+ * @param {Object} token - The token to be registered.
+ * @param {string} warehouseUnitId - The ID of the warehouse unit.
+ * @returns {Promise<boolean|null>} Returns true if successful, null otherwise.
  */
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    if (CONFIG().GENERAL.CORE_REGISTRY_MODE) {
+    const coreRegistryMode = CONFIG().GENERAL.CORE_REGISTRY_MODE;
+    const metadataUrl = `${registryUri}/v1/organizations/metadata`;
+    const apiKeyHeaders = maybeAppendRegistryApiKey({ "Content-Type": "application/json" });
+
+    if (coreRegistryMode) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
-    const response = await superagent
-      .post(`${registryUri}/v1/organizations/metadata`)
-      .send({ [token.asset_id]: JSON.stringify(token) })
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+    const metaDataResponse = await superagent.get(metadataUrl).set(apiKeyHeaders);
+    const metaData = metaDataResponse.body;
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
+    if (metaDataResponse.status === 403) {
+      throw new Error("Registry API key is invalid, please check your config.yaml.");
     }
 
-    if (
-      response.body.message ===
-      "Home org currently being updated, will be completed soon."
-    ) {
-      if (
-        CONFIG().GENERAL.CORE_REGISTRY_MODE &&
-        (await confirmTokenRegistrationOnWarehouse())
-      ) {
-        await updateUnitMarketplaceIdentifierWithAssetId(
-          warehouseUnitId,
-          token.asset_id
-        );
+    if (!metaData[`meta_${token.asset_id}`]) {
+      const response = await superagent.post(metadataUrl)
+        .send({ [token.asset_id]: JSON.stringify(token) })
+        .set(apiKeyHeaders);
+      
+      if (response.status === 403) {
+        throw new Error("Registry API key is invalid, please check your config.yaml.");
       }
-    } else {
-      logger.error("Could not register token creation in registry.");
     }
 
-    return response.body;
-  } catch (error) {
-    logger.error(
-      `Could not register token creation in registry: ${error.message}`
-    );
-    if (error.response?.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
+    if (coreRegistryMode && await confirmTokenRegistrationOnWarehouse()) {
+      await updateUnitMarketplaceIdentifierWithAssetId(warehouseUnitId, token.asset_id);
     }
+
+    return true;
+  } catch (error) {
+    logger.error(`Could not register token creation in registry: ${error.message}`);
+    
+    if (error.response?.body) {
+      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
+    }
+
     return null;
   }
 };
@@ -538,6 +530,10 @@ const getOrgMetaData = async (orgUid) => {
  * @returns {Promise<void>}
  */
 const waitForRegistryDataSync = async (options = {}) => {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
   await mutex.waitForUnlock();
 
   let isFirstSyncAfterFailure = false;
@@ -719,7 +715,7 @@ const splitUnit = async ({
   beneficiaryName,
   beneficiaryAddress,
 }) => {
-  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`)
+  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`);
 
   // Parse the serialNumberBlock
   const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(
