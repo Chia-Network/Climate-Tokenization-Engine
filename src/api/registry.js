@@ -399,7 +399,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       throw new Error("Registry API key is invalid, please check your config.yaml.");
     }
 
-    if (!metaData[`meta_${token.asset_id}`]) {
+    if (!metaData[token.asset_id]) {
       const response = await superagent.post(metadataUrl)
         .send({ [token.asset_id]: JSON.stringify(token) })
         .set(apiKeyHeaders);
