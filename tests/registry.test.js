@@ -13,12 +13,9 @@ const registryUri = generateUriForHostAndPort(
   CONFIG().CADT.PORT
 );
 
-const registryMock = nock(registryUri);
-
 describe("registerTokenCreationOnRegistry", () => {
   beforeEach(() => {
-    registryMock.get("/v1/organizations").reply(200, OrganizationsMock);
-
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
     sinon.stub(wallet, "hasUnconfirmedTransactions").resolves(false);
   });
 
@@ -38,20 +35,20 @@ describe("registerTokenCreationOnRegistry", () => {
 
     const warehouseUnitId = "unit-123";
 
-    const metadataInterceptor = registryMock
+    const metadataInterceptor = nock(registryUri)
       .get("/v1/organizations/metadata")
       .reply(200, {});
 
-    const postMetadataInterceptor = registryMock
+    const postMetadataInterceptor = nock(registryUri)
       .post("/v1/organizations/metadata")
       .reply(200);
 
-    registryMock
+    nock(registryUri)
       .get("/v1/units")
       .query({ warehouseUnitId })
       .reply(200, { warehouseUnitId });
 
-    registryMock
+    nock(registryUri)
       .put("/v1/units", (body) => {
         return (
           JSON.stringify(body) ===
@@ -64,9 +61,7 @@ describe("registerTokenCreationOnRegistry", () => {
       })
       .reply(200);
 
-    registryMock
-      .post("/v1/staging/commit")
-      .reply(200);
+    nock(registryUri).post("/v1/staging/commit").reply(200);
 
     await registry.registerTokenCreationOnRegistry(tokenMock, warehouseUnitId);
 
@@ -85,22 +80,22 @@ describe("registerTokenCreationOnRegistry", () => {
 
     const warehouseUnitId = "unit-123";
 
-    const metadataInterceptor = registryMock
+    const metadataInterceptor = nock(registryUri)
       .get("/v1/organizations/metadata")
       .reply(200, {
-        [tokenMock.asset_id]: {},
+        [`meta_${tokenMock.asset_id}`]: {},
       });
 
-    const postMetadataInterceptor = registryMock
+    const postMetadataInterceptor = nock(registryUri)
       .post("/v1/organizations/metadata")
       .reply(200);
 
-    registryMock
+    nock(registryUri)
       .get("/v1/units")
       .query({ warehouseUnitId })
       .reply(200, { warehouseUnitId });
 
-    registryMock
+    nock(registryUri)
       .put("/v1/units", (body) => {
         return (
           JSON.stringify(body) ===
@@ -113,9 +108,7 @@ describe("registerTokenCreationOnRegistry", () => {
       })
       .reply(200);
 
-    registryMock
-      .post("/v1/staging/commit")
-      .reply(200);
+    nock(registryUri).post("/v1/staging/commit").reply(200);
 
     await registry.registerTokenCreationOnRegistry(tokenMock, warehouseUnitId);
 

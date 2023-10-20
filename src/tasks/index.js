@@ -27,6 +27,9 @@ const addJobToScheduler = (job) => {
  * Start the scheduler and add default jobs
  */
 const start = () => {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
   // Define default jobs
   const defaultJobs = [syncRetirements];
 

@@ -20,7 +20,8 @@ describe("getRetirementActivities", () => {
 
   beforeEach(() => {
     nock(apiEndpoint)
-      .get("/v1/activities?page=1&limit=10&minHeight=1&sort=asc")
+      .get("/v1/activities")
+      .query({ page: 1, limit: 10, minHeight: 1, sort: "asc" })
       .reply(200, mockResponse);
   });
 
