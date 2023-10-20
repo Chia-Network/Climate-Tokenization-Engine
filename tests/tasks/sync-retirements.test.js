@@ -1,5 +1,7 @@
 const { expect } = require("chai");
 const sinon = require("sinon");
+const nock = require("nock");
+
 const syncRetirements = require("../../src/tasks/sync-retirements");
 const registry = require("../../src/api/registry");
 const { logger } = require("../../src/logger");
@@ -7,6 +9,16 @@ const wallet = require("../../src/chia/wallet");
 const retirementExplorer = require("../../src/api/retirement-explorer");
 const ActivityResponseMock = require("../data/ActivityResponseMock");
 const HomeOrgMock = require("../data/HomeOrgMock");
+const OrganizationsMock = require("../data/OrganizationsMock");
+const { CONFIG } = require("../../src/config");
+const { generateUriForHostAndPort } = require("../../src/utils");
+
+const registryUri = generateUriForHostAndPort(
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
+);
+
 
 describe("Task: Sync Retirements", () => {
   let retirementExplorerGetRetirementActivitiesStub;
@@ -17,6 +29,8 @@ describe("Task: Sync Retirements", () => {
   let registryGetHomeOrgStub;
 
   beforeEach(() => {
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
+
     retirementExplorerGetRetirementActivitiesStub = sinon
       .stub(retirementExplorer, "getRetirementActivities")
       .resolves([]);
@@ -39,8 +53,9 @@ describe("Task: Sync Retirements", () => {
     sinon.stub(registry, "waitForRegistryDataSync").resolves();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     sinon.restore();
+    await new Promise((resolve) => setTimeout(() => resolve(), 1000));
   });
 
   it("skips retirement task if no homeorg can be attained by the registry", async () => {
@@ -104,9 +119,14 @@ describe("Task: Sync Retirements", () => {
     registryGetHomeOrgStub.resolves(modifiedHomeOrg);
 
     // Stub registry methods
-    let registryGetAssetUnitBlocksStub = sinon.stub(registry, "getAssetUnitBlocks");
+    let registryGetAssetUnitBlocksStub = sinon.stub(
+      registry,
+      "getAssetUnitBlocks"
+    );
     sinon.stub(registry, "getLastProcessedHeight").resolves(12345);
-    retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves(ActivityResponseMock.activities);
+    retirementExplorerGetRetirementActivitiesStub
+      .onFirstCall()
+      .resolves(ActivityResponseMock.activities);
     retirementExplorerGetRetirementActivitiesStub.onSecondCall().resolves([]);
 
     // Spy on logger.warn method
@@ -121,8 +141,8 @@ describe("Task: Sync Retirements", () => {
 
     expect(registryGetAssetUnitBlocksStub.called).to.be.false;
 
-    // expecting this to be true because the stub is returning activities even though none are processed
-    expect(registrySetLastProcessedHeightStub.called).to.be.true;
+    // expecting this to be false because we didnt get any activities from our home org
+    expect(registrySetLastProcessedHeightStub.called).to.be.false;
   });
 
   it("Does not run the task if the task is already running", () => {
@@ -154,6 +174,7 @@ describe("Task: Sync Retirements", () => {
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
         height: 99999,
+        mode: "PERMISSIONLESS_RETIREMENT",
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },
@@ -166,6 +187,7 @@ describe("Task: Sync Retirements", () => {
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
         height: 12346,
+        mode: "PERMISSIONLESS_RETIREMENT",
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },
@@ -237,6 +259,7 @@ describe("Task: Sync Retirements", () => {
         amount: 10000,
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
+        mode: "PERMISSIONLESS_RETIREMENT",
         height: 99999,
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
@@ -285,6 +308,7 @@ describe("Task: Sync Retirements", () => {
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
         height: 99999,
+        mode: "PERMISSIONLESS_RETIREMENT",
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },
@@ -297,6 +321,7 @@ describe("Task: Sync Retirements", () => {
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
         height: 12344,
+        mode: "PERMISSIONLESS_RETIREMENT",
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
         },

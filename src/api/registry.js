@@ -4,6 +4,10 @@ const { CONFIG } = require("../config");
 const { logger } = require("../logger");
 const wallet = require("../chia/wallet");
 const utils = require("../utils");
+const constants = require("../constants");
+const { Mutex } = require("async-mutex");
+
+const mutex = new Mutex();
 
 const registryUri = utils.generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
@@ -68,6 +72,7 @@ const sanitizeUnitForUpdate = (unit) => {
   delete cleanedUnit.issuanceId;
   delete cleanedUnit.orgUid;
   delete cleanedUnit.serialNumberBlock;
+  delete cleanedUnit.timeStaged;
 
   Object.keys(cleanedUnit).forEach((key) => {
     if (cleanedUnit[key] === null) {
@@ -130,6 +135,8 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
     cleanedUnit.unitStatusReason = beneficiaryAddress;
   }
   cleanedUnit.unitStatus = "Retired";
+
+  logger.info(`Retiring whole unit ${unit.warehouseUnitId}`);
   return await updateUnit(cleanedUnit);
 };
 
@@ -241,7 +248,13 @@ const getHomeOrg = async () => {
       (key) => response.body[key]
     );
 
-    return orgArray.find((org) => org.isHome) || null;
+    const homeOrg = orgArray.find((org) => org.isHome) || null;
+
+    if (homeOrg.orgUid === "PENDING") {
+      return null;
+    }
+
+    return homeOrg;
   } catch (error) {
     logger.error(`Could not get home org: ${error.message}`);
 
@@ -361,61 +374,53 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
 };
 
 /**
- * Registers token creation on the registry.
- *
- * @async
- * @function
- * @param {Object} token - The token to register.
- * @param {string} warehouseUnitId - The warehouse unit ID.
- * @returns {Promise<Object|null>} Returns a Promise that resolves to the response body if successful, or null if an error occurs.
- * @throws {Error} Throws an error if the Registry API key is invalid.
+ * Registers a token creation on the registry.
+ * 
+ * @param {Object} token - The token to be registered.
+ * @param {string} warehouseUnitId - The ID of the warehouse unit.
+ * @returns {Promise<boolean|null>} Returns true if successful, null otherwise.
  */
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    if (CONFIG().GENERAL.CORE_REGISTRY_MODE) {
+    const coreRegistryMode = CONFIG().GENERAL.CORE_REGISTRY_MODE;
+    const metadataUrl = `${registryUri}/v1/organizations/metadata`;
+    const apiKeyHeaders = maybeAppendRegistryApiKey({ "Content-Type": "application/json" });
+
+    if (coreRegistryMode) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
-    const response = await superagent
-      .post(`${registryUri}/v1/organizations/metadata`)
-      .send({ [token.asset_id]: JSON.stringify(token) })
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+    const metaDataResponse = await superagent.get(metadataUrl).set(apiKeyHeaders);
+    const metaData = metaDataResponse.body;
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
+    if (metaDataResponse.status === 403) {
+      throw new Error("Registry API key is invalid, please check your config.yaml.");
     }
 
-    if (
-      response.body.message ===
-      "Home org currently being updated, will be completed soon."
-    ) {
-      if (
-        CONFIG().GENERAL.CORE_REGISTRY_MODE &&
-        (await confirmTokenRegistrationOnWarehouse())
-      ) {
-        await updateUnitMarketplaceIdentifierWithAssetId(
-          warehouseUnitId,
-          token.asset_id
-        );
+    if (!metaData[`meta_${token.asset_id}`]) {
+      const response = await superagent.post(metadataUrl)
+        .send({ [token.asset_id]: JSON.stringify(token) })
+        .set(apiKeyHeaders);
+      
+      if (response.status === 403) {
+        throw new Error("Registry API key is invalid, please check your config.yaml.");
       }
-    } else {
-      logger.error("Could not register token creation in registry.");
     }
 
-    return response.body;
-  } catch (error) {
-    logger.error(
-      `Could not register token creation in registry: ${error.message}`
-    );
-    if (error.response?.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
+    if (coreRegistryMode && await confirmTokenRegistrationOnWarehouse()) {
+      await updateUnitMarketplaceIdentifierWithAssetId(warehouseUnitId, token.asset_id);
     }
+
+    return true;
+  } catch (error) {
+    logger.error(`Could not register token creation in registry: ${error.message}`);
+    
+    if (error.response?.body) {
+      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
+    }
+
     return null;
   }
 };
@@ -520,74 +525,119 @@ const getOrgMetaData = async (orgUid) => {
 /**
  * Waits for the registry data to synchronize.
  *
+ * @param {object} [options] - Function options.
+ * @param {boolean} [options.throwOnEmptyRegistry=false] - Flag to throw error on empty registry.
  * @returns {Promise<void>}
  */
-const waitForRegistryDataSync = async () => {
+const waitForRegistryDataSync = async (options = {}) => {
   if (process.env.NODE_ENV === "test") {
     return;
   }
 
-  await utils.waitFor(5000);
-  const dataLayerConfig = {};
+  await mutex.waitForUnlock();
 
-  if (CONFIG().CHIA.DATALAYER_HOST) {
-    dataLayerConfig.datalayer_host = CONFIG().CHIA.DATALAYER_HOST;
-  }
+  let isFirstSyncAfterFailure = false;
 
-  if (CONFIG().CHIA.WALLET_HOST) {
-    dataLayerConfig.wallet_host = CONFIG().CHIA.WALLET_HOST;
-  }
+  if (!mutex.isLocked()) {
+    const releaseMutex = await mutex.acquire();
+    try {
+      const opts = { throwOnEmptyRegistry: false, ...options };
 
-  if (CONFIG().CHIA.CERTIFICATE_FOLDER_PATH) {
-    dataLayerConfig.certificate_folder_path =
-      CONFIG().CHIA.CERTIFICATE_FOLDER_PATH;
-  }
+      if (process.env.NODE_ENV === "test") {
+        return;
+      }
 
-  if (CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES) {
-    dataLayerConfig.allowUnverifiedCert =
-      CONFIG().CHIA.ALLOW_SELF_SIGNED_CERTIFICATES;
-  }
+      while (true) {
+        await utils.waitFor(5000);
 
-  const datalayer = new Datalayer(dataLayerConfig);
-  const homeOrg = await getHomeOrg();
+        const config = CONFIG().CHIA;
+        const dataLayerConfig = {
+          datalayer_host: config.DATALAYER_HOST,
+          wallet_host: config.WALLET_HOST,
+          certificate_folder_path: config.CERTIFICATE_FOLDER_PATH,
+          allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
+        };
 
-  if (!homeOrg) {
-    logger.warn(
-      "Can not find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
-    );
-    return waitForRegistryDataSync();
-  }
+        const datalayer = new Datalayer(dataLayerConfig);
+        const homeOrg = await getHomeOrg();
 
-  const onChainRegistryRoot = await datalayer.getRoot({
-    id: homeOrg.registryId,
-  });
+        if (!homeOrg) {
+          logger.warn(
+            "Cannot find the home org from the Registry. Please verify your Registry is running and you have created a Home Organization."
+          );
+          isFirstSyncAfterFailure = true;
+          continue;
+        }
 
-  if (!onChainRegistryRoot.confirmed) {
-    console.log("Waiting for Registry root to confirm");
-    return waitForRegistryDataSync();
-  }
+        const onChainRegistryRoot = await datalayer.getRoot({
+          id: homeOrg.registryId,
+        });
 
-  if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
-    console.log("Waiting for Registry to sync with latest regisry root.", {
-      onChainRoot: onChainRegistryRoot.hash,
-      homeOrgRegistryRoot: homeOrg.registryHash,
-    });
-    return waitForRegistryDataSync();
-  }
+        if (!onChainRegistryRoot.confirmed) {
+          logger.debug("Waiting for Registry root to confirm");
+          isFirstSyncAfterFailure = true;
+          continue;
+        }
 
-  const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
+        if (
+          onChainRegistryRoot.hash === constants.emptySingletonHash &&
+          opts.throwOnEmptyRegistry
+        ) {
+          throw new Error(
+            "Registry is empty. Please add some data to run auto retirement task."
+          );
+        }
 
-  if (!onChainOrgRoot.confirmed) {
-    console.log("Waiting for Organization root to confirm");
-    return waitForRegistryDataSync();
-  }
+        if (onChainRegistryRoot.hash !== homeOrg.registryHash) {
+          logger.debug(
+            `Waiting for Registry to sync with latest registry root.
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainRegistryRoot.hash,
+                homeOrgRegistryRoot: homeOrg.registryHash,
+              },
+              null,
+              2
+            )}`
+          );
+          isFirstSyncAfterFailure = true;
+          continue;
+        }
 
-  if (onChainOrgRoot.hash !== homeOrg.orgHash) {
-    console.log("Waiting for Registry to sync with latest organization root.", {
-      onChainRoot: onChainOrgRoot.hash,
-      homeOrgRoot: homeOrg.orgHash,
-    });
-    return waitForRegistryDataSync();
+        const onChainOrgRoot = await datalayer.getRoot({ id: homeOrg.orgUid });
+
+        if (!onChainOrgRoot.confirmed) {
+          logger.debug("Waiting for Organization root to confirm");
+          continue;
+        }
+
+        if (onChainOrgRoot.hash !== homeOrg.orgHash) {
+          logger.debug(
+            `Waiting for Registry to sync with latest organization root. ,
+            ${JSON.stringify(
+              {
+                onChainRoot: onChainOrgRoot.hash,
+                homeOrgRoot: homeOrg.orgHash,
+              },
+              null,
+              2
+            )}`
+          );
+          isFirstSyncAfterFailure = true;
+          continue;
+        }
+
+        // Log the message if conditions are met for the first time after failure
+        if (isFirstSyncAfterFailure) {
+          logger.info("CADT is SYNCED! Proceeding with the task.");
+        }
+
+        // Exit the loop if all conditions are met
+        break;
+      }
+    } finally {
+      releaseMutex();
+    }
   }
 };
 
@@ -655,11 +705,8 @@ const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   }
 };
 
-/**
- * Placeholder function for deleting staging data.
- */
-const deleteStagingData = async () => {
-  console.log("Not implemented");
+const deleteStagingData = () => {
+  return superagent.delete(`${registryUri}/v1/staging/clean`);
 };
 
 const splitUnit = async ({
@@ -668,14 +715,7 @@ const splitUnit = async ({
   beneficiaryName,
   beneficiaryAddress,
 }) => {
-  console.log(
-    "Splitting unit",
-    JSON.stringify({
-      amount,
-      beneficiaryName,
-      beneficiaryAddress,
-    })
-  );
+  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`);
 
   // Parse the serialNumberBlock
   const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(

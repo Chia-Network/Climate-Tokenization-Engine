@@ -58,7 +58,7 @@ app.post("/confirm-detokanization", confirmDetokanization);
  *
  * @returns {Object} An object containing a message and timestamp.
  */
-app.get("/health", (req, res) => {
+app.get("/healthz", (req, res) => {
   res.status(200).json({
     message: "OK",
     timestamp: new Date().toISOString(),
