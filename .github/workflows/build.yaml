@@ -275,7 +275,8 @@ jobs:
         run: |
           echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d "/" -f 2)" >>$GITHUB_OUTPUT
 
-      - uses: Chia-Network/actions/github/jwt@main
+      - name: Gets JWT Token from GitHub
+        uses: Chia-Network/actions/github/jwt@main
 
       - name: Trigger apt repo update
         run: |
