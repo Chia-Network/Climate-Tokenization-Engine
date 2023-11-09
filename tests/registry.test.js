@@ -83,7 +83,7 @@ describe("registerTokenCreationOnRegistry", () => {
     const metadataInterceptor = nock(registryUri)
       .get("/v1/organizations/metadata")
       .reply(200, {
-        [`meta_${tokenMock.asset_id}`]: {},
+        [tokenMock.asset_id]: {},
       });
 
     const postMetadataInterceptor = nock(registryUri)

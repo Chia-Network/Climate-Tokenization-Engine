@@ -197,7 +197,7 @@ const getLastProcessedHeight = async () => {
     }
 
     return response.status === 200
-      ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
+      ? Number(response.body["lastRetiredBlockHeight"] || 0)
       : null;
   } catch (error) {
     logger.error(`Could not get last processed height: ${error.message}`);
@@ -399,7 +399,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       throw new Error("Registry API key is invalid, please check your config.yaml.");
     }
 
-    if (!metaData[`meta_${token.asset_id}`]) {
+    if (!metaData[token.asset_id]) {
       const response = await superagent.post(metadataUrl)
         .send({ [token.asset_id]: JSON.stringify(token) })
         .set(apiKeyHeaders);
