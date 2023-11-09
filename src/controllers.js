@@ -124,7 +124,7 @@ const parseDetokFile = async (req, res) => {
     const orgUid = unitToBeDetokenized?.orgUid;
 
     const orgMetaData = await registry.getOrgMetaData(orgUid);
-    const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
+    const assetIdOrgMetaData = orgMetaData[assetId];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
 
     const responseObject = {
@@ -223,7 +223,7 @@ const processDetokFile = async (req, res) => {
     );
     const orgUid = unitToBeDetokenized?.orgUid;
     const orgMetaData = await registry.getOrgMetaData(orgUid);
-    const assetIdOrgMetaData = orgMetaData[`meta_${assetId}`];
+    const assetIdOrgMetaData = orgMetaData[assetId];
     const parsedAssetIdOrgMetaData = JSON.parse(assetIdOrgMetaData);
 
     res.send({
