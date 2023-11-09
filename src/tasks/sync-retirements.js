@@ -86,6 +86,8 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         minHeight
       );
 
+      console.log({ retirements });
+
       const ownedRetirements = retirements.filter(
         (activity) => activity?.token?.org_uid === homeOrg.orgUid
       );
