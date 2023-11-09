@@ -167,6 +167,7 @@ const processResult = async ({
     await registry.commitStagingData();
     logger.task("Auto Retirement Process Complete");
   } catch (err) {
+    console.trace(err);
     throw new Error("Could not retire unit block");
   }
 };
