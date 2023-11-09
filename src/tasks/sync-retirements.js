@@ -117,6 +117,7 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
       page++;
     }
   } catch (error) {
+    console.trace(error);
     throw new Error(`Cannot get retirement activities: ${error.message}`);
   }
 };
