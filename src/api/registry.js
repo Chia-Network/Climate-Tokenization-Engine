@@ -396,7 +396,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
 
     const metaDataResponse = await superagent
       .get(metadataUrl)
-      .query({ orgUid: token.orgUid })
+      .query({ orgUid: token.org_uid })
       .set(apiKeyHeaders);
     const metaData = metaDataResponse.body;
 
