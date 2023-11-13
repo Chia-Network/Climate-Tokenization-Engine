@@ -93,7 +93,7 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
       );
 
       if (!ownedRetirements.length) {
-        break;
+        continue;
       }
 
       logger.debug(`Owned Retirement activities: ${JSON.stringify(retirements)}`);
