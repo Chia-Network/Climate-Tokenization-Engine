@@ -93,6 +93,7 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
       );
 
       if (!ownedRetirements.length) {
+        page++;
         continue;
       }
 
