@@ -86,6 +86,8 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         minHeight
       );
 
+      logger.debug(`Retirement activities: ${JSON.stringify(retirements)}`);
+
       const ownedRetirements = retirements.filter(
         (activity) => activity?.token?.org_uid === homeOrg.orgUid
       );
@@ -93,6 +95,8 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
       if (!ownedRetirements.length) {
         break;
       }
+
+      logger.debug(`Owned Retirement activities: ${JSON.stringify(retirements)}`);
 
       for (const activity of ownedRetirements) {
         // You can only autoretire your own units
