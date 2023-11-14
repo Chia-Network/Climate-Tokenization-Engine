@@ -1,5 +1,7 @@
 const { expect } = require("chai");
 const sinon = require("sinon");
+const nock = require("nock");
+
 const syncRetirements = require("../../src/tasks/sync-retirements");
 const registry = require("../../src/api/registry");
 const { logger } = require("../../src/logger");
@@ -7,6 +9,16 @@ const wallet = require("../../src/chia/wallet");
 const retirementExplorer = require("../../src/api/retirement-explorer");
 const ActivityResponseMock = require("../data/ActivityResponseMock");
 const HomeOrgMock = require("../data/HomeOrgMock");
+const OrganizationsMock = require("../data/OrganizationsMock");
+const { CONFIG } = require("../../src/config");
+const { generateUriForHostAndPort } = require("../../src/utils");
+
+const registryUri = generateUriForHostAndPort(
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
+);
+
 
 describe("Task: Sync Retirements", () => {
   let retirementExplorerGetRetirementActivitiesStub;
@@ -17,6 +29,8 @@ describe("Task: Sync Retirements", () => {
   let registryGetHomeOrgStub;
 
   beforeEach(() => {
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
+
     retirementExplorerGetRetirementActivitiesStub = sinon
       .stub(retirementExplorer, "getRetirementActivities")
       .resolves([]);

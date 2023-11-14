@@ -28,10 +28,11 @@ const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
  * @param {number} page - Page number.
  * @param {number} limit - Number of activities per page.
  * @param {number} minHeight - Minimum block height to start.
- * @returns {Promise<Array>} - A promise that resolves to an array of retirement activities.
+ * @returns {Promise<Object>} - A promise that resolves to an array of retirement activities.
  */
 const getRetirementActivities = async (page, limit, minHeight) => {
   try {
+    logger.debug(`GET ${retirementExplorerUri}/v1/activities`);
     const response = await superagent
       .get(`${retirementExplorerUri}/v1/activities`)
       .query({

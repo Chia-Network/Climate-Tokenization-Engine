@@ -11,15 +11,18 @@ const TokenCreatedResponseMock = require("./data/TokenCreateResponseMock");
 const UnitMock = require("./data/UnitMock");
 const OrganizationsMock = require("./data/OrganizationsMock");
 const { CONFIG, setConfig } = require("../src/config");
+const { generateUriForHostAndPort } = require("../src/utils");
 
-// Create a nock interceptor for the registry API
-const registryMock = nock(
-  `${CONFIG().CADT.PROTOCOL}://${CONFIG().CADT.HOST}:${CONFIG().CADT.PORT}`
+const registryUri = generateUriForHostAndPort(
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
 );
-const tokenDriverMock = nock(
-  `${CONFIG().CHIA_CLIMATE_TOKENIZATION.PROTOCOL}://${
-    CONFIG().CHIA_CLIMATE_TOKENIZATION.HOST
-  }:${CONFIG().CHIA_CLIMATE_TOKENIZATION.PORT}`
+
+const tokenDriverUri = generateUriForHostAndPort(
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.PROTOCOL,
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.HOST,
+  CONFIG().CHIA_CLIMATE_TOKENIZATION.PORT
 );
 
 describe("Create Token Process", () => {
@@ -27,7 +30,7 @@ describe("Create Token Process", () => {
   let createTokenPayload;
 
   beforeEach(() => {
-    registryMock.get("/v1/organizations").reply(200, OrganizationsMock);
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
 
     createTokenPayload = {
       org_uid: "org-123",
@@ -52,7 +55,7 @@ describe("Create Token Process", () => {
   afterEach(async () => {
     sinon.restore();
     nock.cleanAll();
-    await new Promise(resolve => setTimeout(() => resolve(), 1000));
+    await new Promise((resolve) => setTimeout(() => resolve(), 1000));
   });
 
   afterAll(async () => {
@@ -61,7 +64,7 @@ describe("Create Token Process", () => {
   });
 
   it("health check", async () => {
-    const response = await request(app).get("/health");
+    const response = await request(app).get("/healthz");
     expect(response.status).to.equal(200);
   });
 
@@ -87,7 +90,7 @@ describe("Create Token Process", () => {
     // 2. Call the registry to register the token creation
     // 3. Call the registry to update the unit block with the asset id
 
-    const tokenDriverInterceptor = tokenDriverMock
+    const tokenDriverInterceptor = nock(tokenDriverUri)
       .post("/v1/tokens", (body) => {
         expect(body).to.deep.equal({
           token: {
@@ -105,8 +108,12 @@ describe("Create Token Process", () => {
       })
       .reply(200, TokenCreatedResponseMock);
 
+    nock(registryUri).get("/v1/organizations/metadata").query({
+      orgUid: "7e3d6470452c89bfe0858ae70f60fdb791460c9e4a747d79d3a2617f032eceee"
+    }).reply(200, {});
+
     // Nock Registry Add Metadata Response
-    const updateRegistryMetadataInterceptor = registryMock
+    const updateRegistryMetadataInterceptor = nock(registryUri)
       .post("/v1/organizations/metadata", (body) => {
         const bodyValue = JSON.parse(
           body[TokenCreatedResponseMock.token.asset_id]
@@ -126,13 +133,13 @@ describe("Create Token Process", () => {
       });
 
     // Nock Registry Update Unit Response (1)
-    const getUnitInterceptor = registryMock
+    const getUnitInterceptor = nock(registryUri)
       .get("/v1/units")
       .query({ warehouseUnitId: createTokenPayload.warehouseUnitId })
       .reply(200, UnitMock);
 
     // Nock Registry Update Unit Response (2)
-    const updateUnitInterceptor = registryMock
+    const updateUnitInterceptor = nock(registryUri)
       .put("/v1/units", (body) => {
         expect(body).to.deep.equal({
           ...registry.sanitizeUnitForUpdate(UnitMock),
@@ -172,7 +179,7 @@ describe("Create Token Process", () => {
     // 2. Call the registry to register the token creation
     // 3. Call the registry to update the unit block with the asset id
 
-    const tokenDriverInterceptor = tokenDriverMock
+    const tokenDriverInterceptor = nock(tokenDriverUri)
       .post("/v1/tokens", (body) => {
         expect(body).to.deep.equal({
           token: {
@@ -190,8 +197,16 @@ describe("Create Token Process", () => {
       })
       .reply(200, TokenCreatedResponseMock);
 
+    nock(registryUri)
+      .get("/v1/organizations/metadata")
+      .query({
+        orgUid:
+          "7e3d6470452c89bfe0858ae70f60fdb791460c9e4a747d79d3a2617f032eceee",
+      })
+      .reply(200, {});
+
     // Nock Registry Add Metadata Response
-    const updateRegistryMetadataInterceptor = registryMock
+    const updateRegistryMetadataInterceptor = nock(registryUri)
       .post("/v1/organizations/metadata", (body) => {
         const bodyValue = JSON.parse(
           body[TokenCreatedResponseMock.token.asset_id]

@@ -35,6 +35,7 @@ const maybeAppendRegistryApiKey = (headers = {}) => {
  */
 const commitStagingData = async () => {
   try {
+    logger.debug(`POST ${registryUri}/v1/staging/commit`);
     const response = await superagent
       .post(`${registryUri}/v1/staging/commit`)
       .set(maybeAppendRegistryApiKey());
@@ -91,6 +92,7 @@ const sanitizeUnitForUpdate = (unit) => {
  */
 const updateUnit = async (unit) => {
   try {
+    logger.debug(`PUT ${registryUri}/v1/units`);
     const cleanedUnit = sanitizeUnitForUpdate(unit);
     const response = await superagent
       .put(`${registryUri}/v1/units`)
@@ -148,6 +150,9 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   try {
+    logger.debug(
+      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+    );
     const response = await superagent
       .get(
         `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
@@ -185,6 +190,7 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 const getLastProcessedHeight = async () => {
   try {
     const homeOrgUid = await getHomeOrgUid();
+    logger.debug(`GET ${registryUri}/v1/organizations/metadata`);
     const response = await superagent
       .get(`${registryUri}/v1/organizations/metadata`)
       .query({ orgUid: homeOrgUid })
@@ -197,7 +203,7 @@ const getLastProcessedHeight = async () => {
     }
 
     return response.status === 200
-      ? Number(response.body["meta_lastRetiredBlockHeight"] || 0)
+      ? Number(response.body["lastRetiredBlockHeight"] || 0)
       : null;
   } catch (error) {
     logger.error(`Could not get last processed height: ${error.message}`);
@@ -230,6 +236,7 @@ const getHomeOrgUid = async () => {
  */
 const getHomeOrg = async () => {
   try {
+    logger.debug(`GET ${registryUri}/v1/organizations`);
     const response = await superagent
       .get(`${registryUri}/v1/organizations`)
       .set(maybeAppendRegistryApiKey());
@@ -281,6 +288,7 @@ const setLastProcessedHeight = async (height) => {
     await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
+    logger.debug(`POST ${registryUri}/v1/organizations/metadata`);
     const response = await superagent
       .post(`${registryUri}/v1/organizations/metadata`)
       .send({ lastRetiredBlockHeight: height.toString() })
@@ -344,6 +352,7 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   try {
     await utils.waitFor(30000);
 
+    logger.debug(`GET ${registryUri}/v1/staging/hasPendingTransactions`);
     const response = await superagent
       .get(`${registryUri}/v1/staging/hasPendingTransactions`)
       .set(maybeAppendRegistryApiKey());
@@ -374,61 +383,73 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
 };
 
 /**
- * Registers token creation on the registry.
+ * Registers a token creation on the registry.
  *
- * @async
- * @function
- * @param {Object} token - The token to register.
- * @param {string} warehouseUnitId - The warehouse unit ID.
- * @returns {Promise<Object|null>} Returns a Promise that resolves to the response body if successful, or null if an error occurs.
- * @throws {Error} Throws an error if the Registry API key is invalid.
+ * @param {Object} token - The token to be registered.
+ * @param {string} warehouseUnitId - The ID of the warehouse unit.
+ * @returns {Promise<boolean|null>} Returns true if successful, null otherwise.
  */
 const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
   try {
     await waitForRegistryDataSync();
 
-    if (CONFIG().GENERAL.CORE_REGISTRY_MODE) {
+    const coreRegistryMode = CONFIG().GENERAL.CORE_REGISTRY_MODE;
+    const metadataUrl = `${registryUri}/v1/organizations/metadata`;
+    const apiKeyHeaders = maybeAppendRegistryApiKey({
+      "Content-Type": "application/json",
+    });
+
+    if (coreRegistryMode) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
-    const response = await superagent
-      .post(`${registryUri}/v1/organizations/metadata`)
-      .send({ [token.asset_id]: JSON.stringify(token) })
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+    logger.debug(`GET ${metadataUrl}`);
+    const metaDataResponse = await superagent
+      .get(metadataUrl)
+      .query({ orgUid: token.org_uid })
+      .set(apiKeyHeaders);
 
-    if (response.status === 403) {
+    const metaData = metaDataResponse.body;
+
+    if (metaDataResponse.status === 403) {
       throw new Error(
         "Registry API key is invalid, please check your config.yaml."
       );
     }
 
-    if (
-      response.body.message ===
-      "Home org currently being updated, will be completed soon."
-    ) {
-      if (
-        CONFIG().GENERAL.CORE_REGISTRY_MODE &&
-        (await confirmTokenRegistrationOnWarehouse())
-      ) {
-        await updateUnitMarketplaceIdentifierWithAssetId(
-          warehouseUnitId,
-          token.asset_id
+    if (!metaData[token.asset_id]) {
+      logger.debug(`POST ${metadataUrl}`);
+      const response = await superagent
+        .post(metadataUrl)
+        .send({ [token.asset_id]: JSON.stringify(token) })
+        .set(apiKeyHeaders);
+
+      if (response.status === 403) {
+        throw new Error(
+          "Registry API key is invalid, please check your config.yaml."
         );
       }
-    } else {
-      logger.error("Could not register token creation in registry.");
     }
 
-    return response.body;
+    if (coreRegistryMode && (await confirmTokenRegistrationOnWarehouse())) {
+      await updateUnitMarketplaceIdentifierWithAssetId(
+        warehouseUnitId,
+        token.asset_id
+      );
+    }
+
+    return true;
   } catch (error) {
     logger.error(
       `Could not register token creation in registry: ${error.message}`
     );
+
     if (error.response?.body) {
       logger.error(
         `Additional error details: ${JSON.stringify(error.response.body)}`
       );
     }
+
     return null;
   }
 };
@@ -448,6 +469,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   asset_id
 ) => {
   try {
+    logger.debug(`GET ${registryUri}/v1/units`);
     const getResponse = await superagent
       .get(`${registryUri}/v1/units`)
       .query({ warehouseUnitId })
@@ -465,6 +487,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       marketplace: "Tokenized on Chia",
     };
 
+    logger.debug(`PUT ${registryUri}/v1/units`);
     const putResponse = await superagent
       .put(`${registryUri}/v1/units`)
       .send(unit)
@@ -507,6 +530,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 const getOrgMetaData = async (orgUid) => {
   try {
     const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -538,6 +562,10 @@ const getOrgMetaData = async (orgUid) => {
  * @returns {Promise<void>}
  */
 const waitForRegistryDataSync = async (options = {}) => {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
   await mutex.waitForUnlock();
 
   let isFirstSyncAfterFailure = false;
@@ -654,6 +682,7 @@ const waitForRegistryDataSync = async (options = {}) => {
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
     const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -686,6 +715,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
 const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
     const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -719,7 +749,7 @@ const splitUnit = async ({
   beneficiaryName,
   beneficiaryAddress,
 }) => {
-  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`)
+  logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`);
 
   // Parse the serialNumberBlock
   const { unitBlockStart, unitBlockEnd } = utils.parseSerialNumber(
@@ -757,6 +787,7 @@ const splitUnit = async ({
   };
 
   try {
+    logger.debug(`POST ${registryUri}/v1/units/split`);
     const response = await superagent
       .post(`${registryUri}/v1/units/split`)
       .send(JSON.stringify(payload))
