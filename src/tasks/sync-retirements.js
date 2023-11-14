@@ -95,7 +95,7 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         (activity) => activity?.token?.org_uid === homeOrg.orgUid
       );
 
-      if (!ownedRetirements.length) {
+      if (!ownedRetirements?.length) {
         page++;
         continue;
       }
