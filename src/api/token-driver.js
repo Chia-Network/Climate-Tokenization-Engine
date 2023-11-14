@@ -36,6 +36,8 @@ const maybeAppendTokenDriverApiKey = (headers = {}) => {
 const sendParseDetokRequest = async (detokString) => {
   try {
     const url = `${tokenDriverUri}/v1/tokens/parse-detokenization?content=${detokString}`;
+
+    logger.debug(`GET ${url}`);
     const response = await superagent
       .get(url)
       .set(maybeAppendTokenDriverApiKey());
@@ -62,6 +64,7 @@ const waitForTokenizationTransactionConfirmation = async (
 
   try {
     await waitFor(30000);
+    logger.debug(`GET ${tokenDriverUri}/v1/transactions/${transactionId}`);
     const response = await superagent
       .get(`${tokenDriverUri}/v1/transactions/${transactionId}`)
       .set(maybeAppendTokenDriverApiKey());
@@ -93,6 +96,7 @@ const confirmDetokanization = async (payload) => {
     }
 
     return handleApiRequestWithRetries(async () => {
+      logger.debug(`PUT ${tokenDriverUri}/v1/tokens/${assetId}/detokenize`);
       return await superagent
         .put(`${tokenDriverUri}/v1/tokens/${assetId}/detokenize`)
         .send(payload)
@@ -116,6 +120,7 @@ const confirmDetokanization = async (payload) => {
  */
 const createToken = async (tokenizationBody) => {
   try {
+    logger.debug(`POST ${tokenDriverUri}/v1/tokens`);
     const response = await superagent
       .post(`${tokenDriverUri}/v1/tokens`)
       .send(tokenizationBody)
