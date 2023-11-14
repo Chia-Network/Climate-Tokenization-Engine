@@ -86,12 +86,11 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         minHeight
       );
 
-      if (!retirements.retirements.length) {
-        break;
-      }
-
       logger.debug(`Retirement activities: ${JSON.stringify(retirements)}`);
 
+      if (!retirements?.length) {
+        break;
+      }
       const ownedRetirements = retirements.filter(
         (activity) => activity?.token?.org_uid === homeOrg.orgUid
       );
@@ -101,7 +100,9 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         continue;
       }
 
-      logger.debug(`Owned Retirement activities: ${JSON.stringify(retirements)}`);
+      logger.debug(
+        `Owned Retirement activities: ${JSON.stringify(retirements)}`
+      );
 
       for (const activity of ownedRetirements) {
         // You can only autoretire your own units
@@ -223,7 +224,7 @@ const processUnits = async (
     }
     await wallet.waitForAllTransactionsToConfirm();
   }
-  
+
   return remainingAmountToRetire;
 };
 
