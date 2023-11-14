@@ -72,6 +72,7 @@ const startSyncRetirementsTask = async () => {
 
 /**
  * Get and process retirement activities from the API.
+ * @param {Object} homeOrg - Home organization object.
  * @param {number} minHeight - Minimum block height to start.
  * @returns {Promise<void>}
  */
@@ -79,14 +80,17 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
   try {
     let page = 1;
     const limit = 10;
-    while (true) {
-      const retirements = await retirementExplorer.getRetirementActivities(
-        page,
-        limit,
-        minHeight
-      );
+    let morePagesAvailable = true;
 
-      logger.debug(`Retirement activities: ${JSON.stringify(retirements)}`);
+    while (morePagesAvailable) {
+      const { retirements, total } =
+        await retirementExplorer.getRetirementActivities(
+          page,
+          limit,
+          minHeight
+        );
+
+      morePagesAvailable = page * limit < total;
 
       const ownedRetirements = retirements.filter(
         (activity) => activity?.token?.org_uid === homeOrg.orgUid
@@ -97,10 +101,13 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         continue;
       }
 
-      logger.debug(`Owned Retirement activities: ${JSON.stringify(retirements)}`);
+      logger.debug(
+        `Owned Retirement activities: ${JSON.stringify(retirements)}`
+      );
 
       for (const activity of ownedRetirements) {
-        // You can only autoretire your own units
+        if (activity?.token?.org_uid !== homeOrg.orgUid) continue;
+
         logger.info(`PROCESSING RETIREMENT ACTIVITY: ${activity.coin_id}`);
         await processResult({
           marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
@@ -108,14 +115,11 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
           beneficiaryName: activity.beneficiary_name,
           beneficiaryAddress: activity.beneficiary_address,
         });
-      }
 
-      const highestHeight = calcHighestActivityHeight(retirements);
-
-      // Only set the latest processed height if we actually processed something
-      // This prevents us from setting the last processed height to the same height
-      // if we don't have any units to retire and prevents an unneeded transaction
-      if (highestHeight >= minHeight) {
+        const highestHeight = Math.max(
+          minHeight,
+          calcHighestActivityHeight(retirements)
+        );
         await registry.setLastProcessedHeight(highestHeight);
       }
 
@@ -219,7 +223,7 @@ const processUnits = async (
     }
     await wallet.waitForAllTransactionsToConfirm();
   }
-  
+
   return remainingAmountToRetire;
 };
 

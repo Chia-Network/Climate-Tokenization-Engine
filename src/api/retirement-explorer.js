@@ -28,7 +28,7 @@ const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
  * @param {number} page - Page number.
  * @param {number} limit - Number of activities per page.
  * @param {number} minHeight - Minimum block height to start.
- * @returns {Promise<Array>} - A promise that resolves to an array of retirement activities.
+ * @returns {Promise<Object>} - A promise that resolves to an array of retirement activities.
  */
 const getRetirementActivities = async (page, limit, minHeight) => {
   try {
@@ -55,7 +55,7 @@ const getRetirementActivities = async (page, limit, minHeight) => {
       (activity) => activity.mode === "PERMISSIONLESS_RETIREMENT"
     );
 
-    return retirements;
+    return { retirements, numItems: response.body?.total };
   } catch (error) {
     logger.error("Cannot get retirement activities", error);
 
