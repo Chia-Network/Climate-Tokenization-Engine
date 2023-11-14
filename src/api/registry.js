@@ -384,7 +384,7 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
 
 /**
  * Registers a token creation on the registry.
- * 
+ *
  * @param {Object} token - The token to be registered.
  * @param {string} warehouseUnitId - The ID of the warehouse unit.
  * @returns {Promise<boolean|null>} Returns true if successful, null otherwise.
@@ -395,41 +395,59 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
 
     const coreRegistryMode = CONFIG().GENERAL.CORE_REGISTRY_MODE;
     const metadataUrl = `${registryUri}/v1/organizations/metadata`;
-    const apiKeyHeaders = maybeAppendRegistryApiKey({ "Content-Type": "application/json" });
+    const apiKeyHeaders = maybeAppendRegistryApiKey({
+      "Content-Type": "application/json",
+    });
 
     if (coreRegistryMode) {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
     logger.debug(`GET ${metadataUrl}`);
-    const metaDataResponse = await superagent.get(metadataUrl).set(apiKeyHeaders);
+    const metaDataResponse = await superagent
+      .get(metadataUrl)
+      .query({ orgUid: token.org_uid })
+      .set(apiKeyHeaders);
+
     const metaData = metaDataResponse.body;
 
     if (metaDataResponse.status === 403) {
-      throw new Error("Registry API key is invalid, please check your config.yaml.");
+      throw new Error(
+        "Registry API key is invalid, please check your config.yaml."
+      );
     }
 
     if (!metaData[token.asset_id]) {
       logger.debug(`POST ${metadataUrl}`);
-      const response = await superagent.post(metadataUrl)
+      const response = await superagent
+        .post(metadataUrl)
         .send({ [token.asset_id]: JSON.stringify(token) })
         .set(apiKeyHeaders);
-      
+
       if (response.status === 403) {
-        throw new Error("Registry API key is invalid, please check your config.yaml.");
+        throw new Error(
+          "Registry API key is invalid, please check your config.yaml."
+        );
       }
     }
 
-    if (coreRegistryMode && await confirmTokenRegistrationOnWarehouse()) {
-      await updateUnitMarketplaceIdentifierWithAssetId(warehouseUnitId, token.asset_id);
+    if (coreRegistryMode && (await confirmTokenRegistrationOnWarehouse())) {
+      await updateUnitMarketplaceIdentifierWithAssetId(
+        warehouseUnitId,
+        token.asset_id
+      );
     }
 
     return true;
   } catch (error) {
-    logger.error(`Could not register token creation in registry: ${error.message}`);
-    
+    logger.error(
+      `Could not register token creation in registry: ${error.message}`
+    );
+
     if (error.response?.body) {
-      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
+      logger.error(
+        `Additional error details: ${JSON.stringify(error.response.body)}`
+      );
     }
 
     return null;

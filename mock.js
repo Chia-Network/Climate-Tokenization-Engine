@@ -20,8 +20,11 @@ app.get("/v1/activities", (req, res) => {
           height: 6000000,
           beneficiary_name: "John Doe",
           beneficiary_address: "0x1234",
-          amount: 1000000,
+          amount: 50,
           mode: "PERMISSIONLESS_RETIREMENT",
+          token: {
+            org_uid: 'b964b67129b451a8a3579e99e4f63742f8f5151b848b90c07ff6ccdfe9fb4a12',
+          },
           cw_unit: {
             marketplaceIdentifier:
               "0xf4d61bef9f3022cc2961ca8861c327d104c5e0761cb5fe010d718134d4cd4441",
@@ -31,7 +34,7 @@ app.get("/v1/activities", (req, res) => {
           height: 6000010,
           beneficiary_name: "JANE Doe",
           beneficiary_address: "0x1234",
-          amount: 500000,
+          amount: 100,
           mode: "PERMISSIONLESS_RETIREMENT",
           cw_unit: {
             marketplaceIdentifier:

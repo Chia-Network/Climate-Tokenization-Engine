@@ -108,7 +108,9 @@ describe("Create Token Process", () => {
       })
       .reply(200, TokenCreatedResponseMock);
 
-    nock(registryUri).get("/v1/organizations/metadata").reply(200, {});
+    nock(registryUri).get("/v1/organizations/metadata").query({
+      orgUid: "7e3d6470452c89bfe0858ae70f60fdb791460c9e4a747d79d3a2617f032eceee"
+    }).reply(200, {});
 
     // Nock Registry Add Metadata Response
     const updateRegistryMetadataInterceptor = nock(registryUri)
@@ -195,7 +197,13 @@ describe("Create Token Process", () => {
       })
       .reply(200, TokenCreatedResponseMock);
 
-    nock(registryUri).get("/v1/organizations/metadata").reply(200, {});
+    nock(registryUri)
+      .get("/v1/organizations/metadata")
+      .query({
+        orgUid:
+          "7e3d6470452c89bfe0858ae70f60fdb791460c9e4a747d79d3a2617f032eceee",
+      })
+      .reply(200, {});
 
     // Nock Registry Add Metadata Response
     const updateRegistryMetadataInterceptor = nock(registryUri)
