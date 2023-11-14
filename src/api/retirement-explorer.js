@@ -32,6 +32,7 @@ const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
  */
 const getRetirementActivities = async (page, limit, minHeight) => {
   try {
+    logger.debug(`GET ${retirementExplorerUri}/v1/activities`);
     const response = await superagent
       .get(`${retirementExplorerUri}/v1/activities`)
       .query({
@@ -55,7 +56,7 @@ const getRetirementActivities = async (page, limit, minHeight) => {
       (activity) => activity.mode === "PERMISSIONLESS_RETIREMENT"
     );
 
-    return { retirements, numItems: response.body?.total };
+    return retirements;
   } catch (error) {
     logger.error("Cannot get retirement activities", error);
 
