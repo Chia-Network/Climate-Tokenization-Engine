@@ -1,3 +1,23 @@
+## [1.3.15](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.14...1.3.15) (2023-11-14)
+
+
+### Bug Fixes
+
+* add orgUid query param when retreiving metadata ([d81c209](https://github.com/Chia-Network/climate-tokenization-engine/commit/d81c209883e455162ecdba0d10d934d5005093fb))
+* dont push metadata to cadt if it already exists ([f5691eb](https://github.com/Chia-Network/climate-tokenization-engine/commit/f5691eb1b2d12172a5cb15224f07b157197e88b5))
+* exit retirements loop if retirement response is empty ([0cc5ceb](https://github.com/Chia-Network/climate-tokenization-engine/commit/0cc5cebb419d1ec3541b945060f7b2df90b232cd))
+* organization metadata ([315b149](https://github.com/Chia-Network/climate-tokenization-engine/commit/315b149afbc37735b36129ab0dc3cb1db64126a0))
+* refactored retirement processing loop ([aefd912](https://github.com/Chia-Network/climate-tokenization-engine/commit/aefd9123b5a4076ff537bd691132015b4092bfdf))
+* retirements ([60f6f16](https://github.com/Chia-Network/climate-tokenization-engine/commit/60f6f16f20c5020c6d9a58810ef65ac15f6174a4))
+* retirements ([2808de8](https://github.com/Chia-Network/climate-tokenization-engine/commit/2808de8dd17062953f99a60a190b5a9bcc75b36e))
+
+
+### Features
+
+* dont use meta_ prefix with meta data ([9339f7c](https://github.com/Chia-Network/climate-tokenization-engine/commit/9339f7c43c3b03dbc04661a6cd6da19ae9dd53ff))
+
+
+
 ## [1.3.14](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.13...1.3.14) (2023-10-18)
 
 
