@@ -35,6 +35,7 @@ const maybeAppendRegistryApiKey = (headers = {}) => {
  */
 const commitStagingData = async () => {
   try {
+    logger.debug(`POST ${registryUri}/v1/staging/commit`);
     const response = await superagent
       .post(`${registryUri}/v1/staging/commit`)
       .set(maybeAppendRegistryApiKey());
@@ -91,6 +92,7 @@ const sanitizeUnitForUpdate = (unit) => {
  */
 const updateUnit = async (unit) => {
   try {
+    logger.debug(`PUT ${registryUri}/v1/units`);
     const cleanedUnit = sanitizeUnitForUpdate(unit);
     const response = await superagent
       .put(`${registryUri}/v1/units`)
@@ -148,6 +150,9 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   try {
+    logger.debug(
+      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+    );
     const response = await superagent
       .get(
         `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
@@ -185,6 +190,7 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 const getLastProcessedHeight = async () => {
   try {
     const homeOrgUid = await getHomeOrgUid();
+    logger.debug(`GET ${registryUri}/v1/organizations/metadata`);
     const response = await superagent
       .get(`${registryUri}/v1/organizations/metadata`)
       .query({ orgUid: homeOrgUid })
@@ -230,6 +236,7 @@ const getHomeOrgUid = async () => {
  */
 const getHomeOrg = async () => {
   try {
+    logger.debug(`GET ${registryUri}/v1/organizations`);
     const response = await superagent
       .get(`${registryUri}/v1/organizations`)
       .set(maybeAppendRegistryApiKey());
@@ -281,6 +288,7 @@ const setLastProcessedHeight = async (height) => {
     await utils.waitFor(5000);
     await waitForRegistryDataSync();
 
+    logger.debug(`POST ${registryUri}/v1/organizations/metadata`);
     const response = await superagent
       .post(`${registryUri}/v1/organizations/metadata`)
       .send({ lastRetiredBlockHeight: height.toString() })
@@ -344,6 +352,7 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   try {
     await utils.waitFor(30000);
 
+    logger.debug(`GET ${registryUri}/v1/staging/hasPendingTransactions`);
     const response = await superagent
       .get(`${registryUri}/v1/staging/hasPendingTransactions`)
       .set(maybeAppendRegistryApiKey());
@@ -394,10 +403,12 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       token.detokenization = { mod_hash: "", public_key: "", signature: "" };
     }
 
+    logger.debug(`GET ${metadataUrl}`);
     const metaDataResponse = await superagent
       .get(metadataUrl)
       .query({ orgUid: token.org_uid })
       .set(apiKeyHeaders);
+
     const metaData = metaDataResponse.body;
 
     if (metaDataResponse.status === 403) {
@@ -407,6 +418,7 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
     }
 
     if (!metaData[token.asset_id]) {
+      logger.debug(`POST ${metadataUrl}`);
       const response = await superagent
         .post(metadataUrl)
         .send({ [token.asset_id]: JSON.stringify(token) })
@@ -457,6 +469,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
   asset_id
 ) => {
   try {
+    logger.debug(`GET ${registryUri}/v1/units`);
     const getResponse = await superagent
       .get(`${registryUri}/v1/units`)
       .query({ warehouseUnitId })
@@ -474,6 +487,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
       marketplace: "Tokenized on Chia",
     };
 
+    logger.debug(`PUT ${registryUri}/v1/units`);
     const putResponse = await superagent
       .put(`${registryUri}/v1/units`)
       .send(unit)
@@ -516,6 +530,7 @@ const updateUnitMarketplaceIdentifierWithAssetId = async (
 const getOrgMetaData = async (orgUid) => {
   try {
     const url = `${registryUri}/v1/organizations/metadata?orgUid=${orgUid}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -667,6 +682,7 @@ const waitForRegistryDataSync = async (options = {}) => {
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
     const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -699,6 +715,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
 const getProjectByWarehouseProjectId = async (warehouseProjectId) => {
   try {
     const url = `${registryUri}/v1/projects?projectIds=${warehouseProjectId}`;
+    logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -770,6 +787,7 @@ const splitUnit = async ({
   };
 
   try {
+    logger.debug(`POST ${registryUri}/v1/units/split`);
     const response = await superagent
       .post(`${registryUri}/v1/units/split`)
       .send(JSON.stringify(payload))
