@@ -588,8 +588,11 @@ const waitForRegistryDataSync = async (options = {}) => {
           wallet_host: config.WALLET_HOST,
           certificate_folder_path: config.CERTIFICATE_FOLDER_PATH,
           allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
-          verbose: true
         };
+
+        if (['debug', 'trace'].includes(CONFIG().GENERAL.LOG_LEVEL)) {
+          dataLayerConfig.verbose = true;
+        }
 
         const datalayer = new Datalayer(dataLayerConfig);
         const homeOrg = await getHomeOrg();
