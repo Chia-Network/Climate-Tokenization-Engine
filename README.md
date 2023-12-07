@@ -1,5 +1,6 @@
 # Climate Tokenization Engine
 
+![Minimum Chia Version](https://raw.githubusercontent.com/Chia-Network/core-registry-api/main/minimumChiaVersion.svg)  
 ![Tested Up to Chia Version](https://raw.githubusercontent.com/Chia-Network/core-registry-api/main/testedChiaVersion.svg)
 
 The Climate Tokenization Engine is open source software that allows carbon registries to be able to tokenize existing carbon credit units onto a public blockchain. 

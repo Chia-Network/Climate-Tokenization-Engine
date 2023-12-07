@@ -590,6 +590,10 @@ const waitForRegistryDataSync = async (options = {}) => {
           allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
         };
 
+        if (['debug', 'trace'].includes(CONFIG().GENERAL.LOG_LEVEL)) {
+          dataLayerConfig.verbose = true;
+        }
+
         const datalayer = new Datalayer(dataLayerConfig);
         const homeOrg = await getHomeOrg();
 
