@@ -40,6 +40,7 @@ const tokenizeUnit = async (req, res) => {
 
     if (isTokenCreationPending) {
       res.send({
+        tokenization: data,
         message:
           "Your token is being created and should be ready in a few minutes.",
         success: true,
