@@ -1,3 +1,19 @@
+## [1.3.16](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.15...1.3.16) (2023-12-07)
+
+
+### Bug Fixes
+
+* verbose setting ([3aaa1ad](https://github.com/Chia-Network/climate-tokenization-engine/commit/3aaa1ad612b6a66f374eddde5cdf66fbc4b3f141))
+
+
+### Features
+
+* package.json update ([738d6b1](https://github.com/Chia-Network/climate-tokenization-engine/commit/738d6b1947dcf7474d07eddb8775fabbdf49d11a))
+* package.json update ([459bef7](https://github.com/Chia-Network/climate-tokenization-engine/commit/459bef7e0e4dffe0605ff1dfd0af1df21c5d061d))
+* return tokenization data in tokenize endpoint ([4b74b88](https://github.com/Chia-Network/climate-tokenization-engine/commit/4b74b88dfb55ce038e49e3e7060a5ecc0fe2bc3e))
+
+
+
 ## [1.3.15](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.14...1.3.15) (2023-11-14)
 
 
