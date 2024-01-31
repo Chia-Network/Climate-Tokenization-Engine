@@ -1,3 +1,215 @@
+## [1.3.16](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.15...1.3.16) (2023-12-07)
+
+
+### Bug Fixes
+
+* verbose setting ([3aaa1ad](https://github.com/Chia-Network/climate-tokenization-engine/commit/3aaa1ad612b6a66f374eddde5cdf66fbc4b3f141))
+
+
+### Features
+
+* package.json update ([738d6b1](https://github.com/Chia-Network/climate-tokenization-engine/commit/738d6b1947dcf7474d07eddb8775fabbdf49d11a))
+* package.json update ([459bef7](https://github.com/Chia-Network/climate-tokenization-engine/commit/459bef7e0e4dffe0605ff1dfd0af1df21c5d061d))
+* return tokenization data in tokenize endpoint ([4b74b88](https://github.com/Chia-Network/climate-tokenization-engine/commit/4b74b88dfb55ce038e49e3e7060a5ecc0fe2bc3e))
+
+
+
+## [1.3.15](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.14...1.3.15) (2023-11-14)
+
+
+### Bug Fixes
+
+* add orgUid query param when retreiving metadata ([d81c209](https://github.com/Chia-Network/climate-tokenization-engine/commit/d81c209883e455162ecdba0d10d934d5005093fb))
+* dont push metadata to cadt if it already exists ([f5691eb](https://github.com/Chia-Network/climate-tokenization-engine/commit/f5691eb1b2d12172a5cb15224f07b157197e88b5))
+* exit retirements loop if retirement response is empty ([0cc5ceb](https://github.com/Chia-Network/climate-tokenization-engine/commit/0cc5cebb419d1ec3541b945060f7b2df90b232cd))
+* organization metadata ([315b149](https://github.com/Chia-Network/climate-tokenization-engine/commit/315b149afbc37735b36129ab0dc3cb1db64126a0))
+* refactored retirement processing loop ([aefd912](https://github.com/Chia-Network/climate-tokenization-engine/commit/aefd9123b5a4076ff537bd691132015b4092bfdf))
+* retirements ([60f6f16](https://github.com/Chia-Network/climate-tokenization-engine/commit/60f6f16f20c5020c6d9a58810ef65ac15f6174a4))
+* retirements ([2808de8](https://github.com/Chia-Network/climate-tokenization-engine/commit/2808de8dd17062953f99a60a190b5a9bcc75b36e))
+
+
+### Features
+
+* dont use meta_ prefix with meta data ([9339f7c](https://github.com/Chia-Network/climate-tokenization-engine/commit/9339f7c43c3b03dbc04661a6cd6da19ae9dd53ff))
+
+
+
+## [1.3.14](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.13...1.3.14) (2023-10-18)
+
+
+### Bug Fixes
+
+* dont process tokenization activitiies as retirements ([f06a424](https://github.com/Chia-Network/climate-tokenization-engine/commit/f06a4246b291137759da446c048cac10cf5baba2))
+
+
+
+## [1.3.13](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.12...1.3.13) (2023-10-18)
+
+
+### Bug Fixes
+
+* dont process unit retirements when unit count is nan ([5e3ceac](https://github.com/Chia-Network/climate-tokenization-engine/commit/5e3ceac8974ac540c70ef5fda45bc226d24ee065))
+
+
+### Features
+
+* logging for zach ([b52b906](https://github.com/Chia-Network/climate-tokenization-engine/commit/b52b906a3b079f8b5f95e4212d6f75d0e2be213b))
+
+
+
+## [1.3.12](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.11...1.3.12) (2023-10-17)
+
+
+### Bug Fixes
+
+* DATA_LAYER_HOST should be DATALAYER_HOST ([5555c8e](https://github.com/Chia-Network/climate-tokenization-engine/commit/5555c8eeb72074ebf3c77746574081fe722e7c69))
+* dont return homeorg when in pending status ([7f828a4](https://github.com/Chia-Network/climate-tokenization-engine/commit/7f828a4bb7d9a8c9d870bae4a111ef0fc2a14087))
+* dont write last processed height when you didnt process retirements ([ef245da](https://github.com/Chia-Network/climate-tokenization-engine/commit/ef245da3783ff4c8f3d450741705f7efa23dcff0))
+* optional handling on empty registry ([0160690](https://github.com/Chia-Network/climate-tokenization-engine/commit/01606907eb4a436b7f2729fc6cf1d9c3d98909e6))
+
+
+### Features
+
+* add mutex to wait for cadt sync to prevent stack buildup ([9336d32](https://github.com/Chia-Network/climate-tokenization-engine/commit/9336d325c33439b421d6cb9bfc2acaa11f64139c))
+
+
+
+## [1.3.11](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.10...1.3.11) (2023-10-10)
+
+
+### Bug Fixes
+
+* only attempt to autoretire your own units ([2a5bbeb](https://github.com/Chia-Network/climate-tokenization-engine/commit/2a5bbeb6f4c00711b147b448449e091bece77ecd))
+* package.json ([176a93e](https://github.com/Chia-Network/climate-tokenization-engine/commit/176a93ef611913930a3115ae999c0bf1fa04d0ee))
+
+
+### Features
+
+* add cors to server ([a1a4c93](https://github.com/Chia-Network/climate-tokenization-engine/commit/a1a4c93d2b978eaf68649d58cf577783ab8a5ab9))
+* all external services have optional api key appended ([c843ff4](https://github.com/Chia-Network/climate-tokenization-engine/commit/c843ff44470fd05f24706f1ecf57d6a6c580dcbf))
+* configure unified config ([b4a7e0f](https://github.com/Chia-Network/climate-tokenization-engine/commit/b4a7e0f93e0584ca70e7e6e1d1c2e0f830e7db9d))
+* fully refactored ([52f7a9d](https://github.com/Chia-Network/climate-tokenization-engine/commit/52f7a9def804f3decbff90d4721ad159007beb9e))
+* override default config to allow unverified certs ([f5d18f7](https://github.com/Chia-Network/climate-tokenization-engine/commit/f5d18f711c9e381d9d126fb35ebafd62d922e4e7))
+* refactor proxy endpoints ([172804e](https://github.com/Chia-Network/climate-tokenization-engine/commit/172804e1c913ebd22cc6f2aa962080bc9803160a))
+* set up controllers for testing ([f9101fb](https://github.com/Chia-Network/climate-tokenization-engine/commit/f9101fbb7fccf7dc71105705c0da1fa4fb1aa349))
+* stop server gracefully during tests ([d2607c3](https://github.com/Chia-Network/climate-tokenization-engine/commit/d2607c3ecfcb04fbcb2099b7820c60de160c9c36))
+
+
+
+## [1.3.10](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.9...1.3.10) (2023-09-20)
+
+
+### Bug Fixes
+
+* dnt crash if homeorg does not exist ([8f2d02e](https://github.com/Chia-Network/climate-tokenization-engine/commit/8f2d02ef3e50753ef97aa2ebaad3fa8a9518df5e))
+
+
+
+## [1.3.9](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.8...1.3.9) (2023-09-20)
+
+
+### Bug Fixes
+
+* revert pending transactions check ([46b9a06](https://github.com/Chia-Network/climate-tokenization-engine/commit/46b9a0677eeb78c752f132fb41ae4e95c6a0479d))
+
+
+
+## [1.3.8](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.7...1.3.8) (2023-09-20)
+
+
+### Features
+
+* assert no pending transactions when tokenizing ([3aeea03](https://github.com/Chia-Network/climate-tokenization-engine/commit/3aeea034abcb3ae6d54caab75e21d4127d64e728))
+
+
+
+## [1.3.7](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.6...1.3.7) (2023-09-19)
+
+
+### Bug Fixes
+
+* 5 mins for autoretire ([7f8f797](https://github.com/Chia-Network/climate-tokenization-engine/commit/7f8f7970a50653b840b11459376d8d3e94f78d17))
+
+
+### Features
+
+* make app port configurable ([5db1132](https://github.com/Chia-Network/climate-tokenization-engine/commit/5db1132bac88dc683dadc0f1c2ed96e89d7b8153))
+
+
+
+## [1.3.6](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.5...1.3.6) (2023-09-14)
+
+
+
+## [1.3.5](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.4...1.3.5) (2023-09-12)
+
+
+### Bug Fixes
+
+* various fixes to autoretirement ([77dbfd6](https://github.com/Chia-Network/climate-tokenization-engine/commit/77dbfd66d28d3cf80844d26b96c627dc1f74764c))
+
+
+
+## [1.3.4](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.2...1.3.4) (2023-09-08)
+
+
+### Bug Fixes
+
+* remove forbidden fields from tokenizing ([6f89e0c](https://github.com/Chia-Network/climate-tokenization-engine/commit/6f89e0ce3cc02c675b86b65a680604b322e8c1be))
+
+
+### Features
+
+* delete detokenization tail if core registry ([96e92ed](https://github.com/Chia-Network/climate-tokenization-engine/commit/96e92ed4fc2f3bdc8137069b9f1c52cef05219f6))
+
+
+
+## [1.3.2](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.1...1.3.2) (2023-09-07)
+
+
+### Features
+
+* auto retire ([76e9451](https://github.com/Chia-Network/climate-tokenization-engine/commit/76e9451b5338ec8f2298c82e2944eda0e01a297f))
+
+
+
+## [1.3.1](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.0...1.3.1) (2023-09-05)
+
+
+### Features
+
+* programmitically get homeorg from cadt ([cc89646](https://github.com/Chia-Network/climate-tokenization-engine/commit/cc896463e6a082bf47baa3a476f51a96e2414ade))
+
+
+
+# [1.3.0](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.2.1...1.3.0) (2023-09-05)
+
+
+### Bug Fixes
+
+* typo ([ab647af](https://github.com/Chia-Network/climate-tokenization-engine/commit/ab647af2c60a1066fd0b4e2060683faa84c35d48))
+
+
+### Features
+
+* add babel to testsuit ([d0012df](https://github.com/Chia-Network/climate-tokenization-engine/commit/d0012df61c6903f915062ee71bd4fb743bdca797))
+* add retirement splitter ([413bf15](https://github.com/Chia-Network/climate-tokenization-engine/commit/413bf15cadb9f72c1f2fa278dde6a6fbf352e9db))
+* retirement splitter ([63eefa6](https://github.com/Chia-Network/climate-tokenization-engine/commit/63eefa6cb456f3eadfe8eb2dcac8e528d7b5978d))
+
+
+
+## [1.2.1](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.2.0...1.2.1) (2023-08-31)
+
+
+
+# [1.2.0](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.1.5...1.2.0) (2023-08-29)
+
+
+
+## [1.1.5](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.1.4...1.1.5) (2023-07-17)
+
+
+
 ## [1.1.4](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.1.3...1.1.4) (2023-07-14)
 
 
