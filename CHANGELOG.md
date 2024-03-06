@@ -1,3 +1,12 @@
+## [1.3.17](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.16...1.3.17) (2024-03-06)
+
+
+### Bug Fixes
+
+* paginated requests for units ([f1efebb](https://github.com/Chia-Network/climate-tokenization-engine/commit/f1efebb329c56951c44c6a2698ec6f23f138cbd4))
+
+
+
 ## [1.3.16](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.15...1.3.16) (2023-12-07)
 
 
