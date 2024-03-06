@@ -151,12 +151,15 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   try {
     logger.debug(
-      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq&page=1&limit=1000`
     );
     const response = await superagent
-      .get(
-        `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
-      )
+      .get(`${registryUri}/v1/units`)
+      .query({
+        filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
+        page: 1,
+        limit: 1000,
+      })
       .set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -590,7 +593,7 @@ const waitForRegistryDataSync = async (options = {}) => {
           allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
         };
 
-        if (['debug', 'trace'].includes(CONFIG().GENERAL.LOG_LEVEL)) {
+        if (["debug", "trace"].includes(CONFIG().GENERAL.LOG_LEVEL)) {
           dataLayerConfig.verbose = true;
         }
 
