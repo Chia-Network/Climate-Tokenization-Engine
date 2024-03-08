@@ -1,3 +1,12 @@
+## [1.3.18](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.17...1.3.18) (2024-03-08)
+
+
+### Bug Fixes
+
+* registry limit ([748a8b8](https://github.com/Chia-Network/climate-tokenization-engine/commit/748a8b82573747db9e2fb2f012211d16ed73be9d))
+
+
+
 ## [1.3.17](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.16...1.3.17) (2024-03-06)
 
 
