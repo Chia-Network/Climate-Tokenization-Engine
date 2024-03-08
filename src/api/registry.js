@@ -698,7 +698,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
       );
     }
 
-    return response.body;
+    return response?.body?.data || [];
   } catch (error) {
     logger.error(`Could not get tokenized unit by asset id: ${error.message}`);
 
