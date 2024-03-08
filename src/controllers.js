@@ -109,7 +109,7 @@ const parseDetokFile = async (req, res) => {
     const unitToBeDetokenizedResponse =
       await registry.getTokenizedUnitByAssetId(assetId);
 
-    let unitToBeDetokenized = JSON.parse(unitToBeDetokenizedResponse);
+    let unitToBeDetokenized = unitToBeDetokenizedResponse;
     if (unitToBeDetokenized.length) {
       unitToBeDetokenized = unitToBeDetokenized[0];
     }
