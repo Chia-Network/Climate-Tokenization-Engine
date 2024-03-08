@@ -151,7 +151,7 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   try {
     logger.debug(
-      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq&page=1&limit=1000`
+      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq&page=1&limit=100`
     );
     const response = await superagent
       .get(`${registryUri}/v1/units`)
