@@ -688,7 +688,7 @@ const waitForRegistryDataSync = async (options = {}) => {
  */
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
-    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}&page=1&limit=100`;
     logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
