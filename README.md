@@ -73,18 +73,30 @@ sudo systemctl enable climate-tokenization-engine@<USERNAME>
 
 ## Configuration
 
-In the `CHIA_ROOT` directory (usually `~/.chia/mainnet` on Linux), Climate Tokenization Engine will add a directory called `climate-tokenization-engine` when the application is first run (in fact, this directory could be deleted at any time and it will be recreated the next time it is started).  The main Climate Tokenization Engine configuration file is called `config.yaml` and can be found in this directory.  The options in this file are as follows:
+In the `CHIA_ROOT` directory (usually `~/.chia/mainnet` on Linux), Climate Tokenization Engine will add a directory called `core-registry` when the application is first run (in fact, this directory could be deleted at any time and it will be recreated the next time it is started).  Within that directory, a shared `config.yaml` file can be found that is used by all Core Registry applications.  While the config file likely will contain configs for all Core Registry applications, only the options necessary for Climate Tokenization Engine will be documented here.  The options in this file are as follows:
 
-* **DATA_LAYER_HOST**: Defaults to https://localhost:8562 which is where the Chia DataLayer service should be running. This should only be changed if Chia is running on a different machine than the Climate Tokenization Engine, or DataLayer is running on a non-standard port.
-* **CLIMATE_TOKENIZATION_ENGINE_API_KEY**: Set the API key used to access the Climate Tokenization Engine service. This is useful if you plan to use the [Climate Tokenization Engine User Interface](https://github.com/Chia-Network/Climate-Tokenization-Engine-UI) remotely to access the service.
-* **CADT_API_SERVER_HOST**: Defaults to localhost. It is strongly recommended to run the Climate Tokenization Engine on the same machine as the CADT API server.
-* **CADT_API_KEY**: If your CADT API server is protected with an API key, add the same key here so the Climate Tokenization Engine can make the proper requests to the CADT service.
-* **CLIMATE_TOKENIZATION_CHIA_HOST**: Defaults to localhost. It is strongly recommended to run the Climate Tokenization Engine on the same machine as the Climate Tokenization Chia host.
-* **CLIMATE_TOKENIZATION_ENGINE_PORT** Specifiy the port that Climate Tokenization Engine runs on.
-* **CORE_REGISTRY_MODE**: Defaults to `FALSE`. Set this parameter to `TRUE` if you'd like CADT to automatically be updated when tokenization occurs.
-* **UNITS_FILTER**: This parameter determines which carbon units in CADT will show up as available to be tokenized in the Climate Tokenization Engine. By default, `Retired` `Cancelled` and `Expired` units will not be displayed as available to tokenize in the Climate Tokenization Engine.
-* **LOG_LEVEL**: Determines the amount of logs that get written by the service. Defaults to `INFO`, but can be set to `DEBUG` if necessary.
-* **LOG_RETENTION_DAYS**: Defaults to `30` days, but can be set lower or higher, depending on log needs.
+* **GENERAL**:  
+  * **CORE_REGISTRY_MODE**: False (default) when running in stand-alone mode.  True if running embedded as part of the [Core Registry application](https://github.com/Chia-Network/core-registry-api).   
+  * **LOG_LEVEL**: All available log levels can be found in the documentation for our [logging module](https://github.com/Chia-Network/core-registry-logger?tab=readme-ov-file#log-levels). Log level `task` (the default) is appropriate for normal use, `debug` when troubleshooting an issue. 
+  * **LOG_RETENTION_DAYS**: Default of 30  
+  
+* **CHIA**:  
+  * **DATALAYER_HOST**: Defaults to https://localhost:8562 which is where the Chia DataLayer service RPC runs by default. This should only be changed if Chia is running on a different machine than the Climate Tokenization Engine, or DataLayer is running on a non-standard port.
+  * **WALLET_HOST**:  Defaults to https://localhost:9256 which is where the Chia Wallet RPC should be unless specifically running on a non-standard port or on a different machine. 
+  * **CERTIFICATE_FOLDER_PATH**: Default of "null" searches the default Chia location for connection certificates.  If running Chia on a remote machine or with a non-standard `CHIA_ROOT`, use this option to provide a path to the Chia certificates.
+  * **ALLOW_SELF_SIGNED_CERTIFICATES**: Default of true is appropriate for nearly all circumstances. 
+  * **DATALAYER_FILE_SERVER_URL**: Full URL where Chia DataLayer files are served. In order to publish on DataLayer for climate tokenization, Chia must share files at a publicly accessible URL.  This could use the Chia DataLayer HTTP service or something like an S3 bucket.  The full URL, including schema and path, is necessary for any Core Registry applications to share files.  Example: `http://my-datalayer-url.com/`
+  * **DEFAULT_FEE**: [Fee](https://docs.chia.net/mempool/) for each transaction on the Chia blockchain in mojos. The default is 300000000 mojos (0.0003 XCH) and can be set higher or lower depending on how [busy](https://dashboard.chia.net/d/46EAA05E/mempool-transactions-and-fees?orgId=1) the Chia network is.  If a fee is set very low, it may cause a delay in transaction processing.  
+  * **DEFAULT_COIN_AMOUNT**: Units are mojo. Each DataLayer transaction needs a coin amount, and the default is 300000000 mojo. 
+* **TOKENIZATION_ENGINE**
+  * **PROTOCOL**: Default `http`. When running multiple Core Registry applications, this is used with the `HOST` configuration to build the URL to make requests to the Tokenization Engine.  Unless the Core Registry applications are running across multiple machines, `http` is likely the correct value. 
+  * **HOST**: When running multiple Core Registry applications, this is the host that other applications will use to send API requests to Tokenization Engine.  Unless running Core Registry applications across multiple machines, the default of `127.0.0.1` is likely the correct value.
+  * **API_KEY**: Defaults to `null`.  In nearly all scenarios, especially if the Tokenization Engine is going to be accessible outside of this machine, an API key needs to be set to prevent unauthorized tokenization.  Generate a random API key following general password length and complexity best practices. 
+  * **PORT**: Port where Tokenization Engine will listen. Default 31311.  
+  * **BIND_ADDRESS**: Defaults to localhost.  To make Tokenization Engine available on a public interface, change this to the public IP of the host instance or to `0.0.0.0` to listen on all interfaces.  If this is changed to anything besides localhost, and `API_KEY` must be set to avoid unauthorized access.
+  * **UNITS_FILTER**: Most users will want to leave this as the default of `unitStatus:["Retired", "Cancelled", "Expired"]:not`.  
+  * **TASKS**:  
+    * **SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS**: Retirements are synced at this interval.  To see retirements across your Core Registry suite of applications more quickly, lower this value from the default of 300 seconds.  Syncing will use system resources and users should work towards a balance of fast sync times that the available system resources can support.
 
 ## Developer Guide
 
