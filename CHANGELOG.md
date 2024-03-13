@@ -1,3 +1,17 @@
+## [1.3.20](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.19...1.3.20) (2024-03-13)
+
+
+### Bug Fixes
+
+* update deps ([f9a8304](https://github.com/Chia-Network/climate-tokenization-engine/commit/f9a8304cfde1a1dc4dfe9a9d4f79b872f59b6a78))
+
+
+### Features
+
+* dont require homeorg for healthz ([e4aa4f6](https://github.com/Chia-Network/climate-tokenization-engine/commit/e4aa4f63cdbba8df58744230a78d989411c1f20f))
+
+
+
 ## [1.3.19](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.18...1.3.19) (2024-03-08)
 
 
