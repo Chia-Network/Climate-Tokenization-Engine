@@ -19,6 +19,10 @@
 [Unit]
 Description=Climate Tokenization Engine
 
+# Stop automatically restarting if 10 failures in 5 minutes
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
 [Service]
 # Set Chia directory as an environment variable
 Environment=CHIA_ROOT=/home/%i/.chia/mainnet
@@ -29,6 +33,10 @@ ExecStart=/opt/climate-tokenization-engine/climate-tokenization-engine
 # Start the software with `systemctl start climate-tokenization-engine@username`
 User=%i
 Group=%i
+
+# Auto-restart if process stopped outside of systemd
+Restart=on-failure
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

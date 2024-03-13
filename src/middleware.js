@@ -65,6 +65,11 @@ const assertApiKey = (req, res, next) => {
 };
 
 const assertHomeOrgExists = async (req, res, next) => {
+  // Skip everything if the request is a GET request to /healthz
+  if (req.method === "GET" && req.path === "/healthz") {
+    return next();
+  }
+
   try {
     const homeOrgUid = await getHomeOrgUid();
 
