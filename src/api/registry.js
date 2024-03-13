@@ -151,12 +151,15 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   try {
     logger.debug(
-      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
+      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq&page=1&limit=100`
     );
     const response = await superagent
-      .get(
-        `${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq`
-      )
+      .get(`${registryUri}/v1/units`)
+      .query({
+        filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
+        page: 1,
+        limit: 1000,
+      })
       .set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -590,7 +593,7 @@ const waitForRegistryDataSync = async (options = {}) => {
           allowUnverifiedCert: config.ALLOW_SELF_SIGNED_CERTIFICATES,
         };
 
-        if (['debug', 'trace'].includes(CONFIG().GENERAL.LOG_LEVEL)) {
+        if (["debug", "trace"].includes(CONFIG().GENERAL.LOG_LEVEL)) {
           dataLayerConfig.verbose = true;
         }
 
@@ -685,7 +688,7 @@ const waitForRegistryDataSync = async (options = {}) => {
  */
 const getTokenizedUnitByAssetId = async (assetId) => {
   try {
-    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}`;
+    const url = `${registryUri}/v1/units?marketplaceIdentifiers=${assetId}&page=1&limit=100`;
     logger.debug(`GET ${url}`);
     const response = await superagent.get(url).set(maybeAppendRegistryApiKey());
 
@@ -695,7 +698,7 @@ const getTokenizedUnitByAssetId = async (assetId) => {
       );
     }
 
-    return response.body;
+    return response?.body?.data || [];
   } catch (error) {
     logger.error(`Could not get tokenized unit by asset id: ${error.message}`);
 
