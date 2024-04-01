@@ -143,47 +143,49 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 };
 
 /**
- * Gets asset unit blocks by a marketplace identifier.
+ * Fetches all pages of asset unit blocks by a marketplace identifier and aggregates the data.
  *
  * @param {string} marketplaceIdentifier - The marketplace identifier
- * @returns {Promise<Object>} The response body
+ * @returns {Promise<Array>} Aggregate of data from all pages
  */
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
+  const aggregateData = [];
+  let currentPage = 1;
+  let totalPages = 1;
+
   try {
-    logger.debug(
-      `GET ${registryUri}/v1/units?filter=marketplaceIdentifier:${marketplaceIdentifier}:eq&page=1&limit=100`
-    );
-    const response = await superagent
-      .get(`${registryUri}/v1/units`)
-      .query({
-        filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
-        page: 1,
-        limit: 1000,
-      })
-      .set(maybeAppendRegistryApiKey());
+    while (currentPage <= totalPages) {
+      logger.debug(`Fetching page ${currentPage} for marketplaceIdentifier: ${marketplaceIdentifier}`);
+      const response = await superagent
+        .get(`${registryUri}/v1/units`)
+        .query({
+          filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
+          page: currentPage,
+          limit: 2,
+        })
+        .set(maybeAppendRegistryApiKey());
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
+      if (response.status === 403) {
+        throw new Error("Registry API key is invalid, please check your config.yaml.");
+      }
+
+      aggregateData.push(...response.body.data); // Assuming response.body.data is the array to aggregate
+      totalPages = Math.ceil(response.body.total / 100); // Update total pages if response includes total count
+      currentPage++;
     }
 
-    return response?.body;
+    return aggregateData;
   } catch (error) {
-    logger.error(
-      `Could not get asset unit blocks from registry: ${error.message}`
-    );
+    logger.error(`Could not get asset unit blocks from registry: ${error.message}`);
 
-    // Log additional information if present in the error object
     if (error.response && error.response.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
+      logger.error(`Additional error details: ${JSON.stringify(error.response.body)}`);
     }
 
-    return null;
+    return [];
   }
 };
+
 
 /**
  * Gets the last processed block height.
