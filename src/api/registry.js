@@ -151,10 +151,9 @@ const retireUnit = async (unit, beneficiaryName, beneficiaryAddress) => {
 const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   const aggregateData = [];
   let currentPage = 1;
-  let totalPages = 1;
-
+  let pageCount = 1;
   try {
-    while (currentPage <= totalPages) {
+    do {
       logger.debug(`Fetching page ${currentPage} for marketplaceIdentifier: ${marketplaceIdentifier}`);
       const response = await superagent
         .get(`${registryUri}/v1/units`)
@@ -169,10 +168,10 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
         throw new Error("Registry API key is invalid, please check your config.yaml.");
       }
 
-      aggregateData.push(...response.body.data); // Assuming response.body.data is the array to aggregate
-      totalPages = Math.ceil(response.body.total / 100); // Update total pages if response includes total count
+      aggregateData.push(...response.body.data);
+      pageCount = response.body.pageCount;
       currentPage++;
-    }
+    } while (currentPage <= pageCount);
 
     return aggregateData;
   } catch (error) {
