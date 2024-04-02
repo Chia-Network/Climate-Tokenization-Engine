@@ -128,7 +128,7 @@ jobs:
 
           echo "Notarizing the .pkg"
           xcrun notarytool submit \
-            --wait
+            --wait \
             --apple-id "${{ secrets.APPLE_NOTARIZE_USERNAME }}" \
             --password "${{ secrets.APPLE_NOTARIZE_PASSWORD }}" \
             --team-id "${{ secrets.APPLE_TEAM_ID }}" \
