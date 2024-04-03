@@ -1,6 +1,6 @@
 {
   "name": "climate-tokenization-engine",
-  "version": "1.3.20",
+  "version": "1.3.21",
   "bin": "./src/server.js",
   "description": "",
   "main": "proxy.js",
