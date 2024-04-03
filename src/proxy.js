@@ -78,7 +78,7 @@ const getUntokenizedUnits = () => {
       const currentUrl = new URL(`${registryUri}${path}`);
       const newQuery = updateQueryWithParam(
         currentUrl.search,
-        { param: "hasMarketplaceIdentifier", value: false },
+        { param: "onlyTokenizedUnits", value: false },
         { param: "orgUid", value: homeOrgUid },
         { param: "includeProjectInfoInSearch", value: true },
         { param: "filter", value: CONFIG().TOKENIZATION_ENGINE.UNITS_FILTER }
