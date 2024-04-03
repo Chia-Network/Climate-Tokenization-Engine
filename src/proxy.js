@@ -19,9 +19,8 @@ const getTokenizedUnits = () => {
       const currentUrl = new URL(`${registryUri}${path}`);
       const newQuery = updateQueryWithParam(
         currentUrl.search,
-        { param: "hasMarketplaceIdentifier", value: true },
-        { param: "orgUid", value: homeOrgUid },
-        { param: "includeProjectInfoInSearch", value: true }
+        { param: "onlyTokenizedUnits", value: true },
+        { param: "orgUid", value: homeOrgUid }
       );
       return "/v1/units" + newQuery;
     },
@@ -79,7 +78,7 @@ const getUntokenizedUnits = () => {
       const currentUrl = new URL(`${registryUri}${path}`);
       const newQuery = updateQueryWithParam(
         currentUrl.search,
-        { param: "hasMarketplaceIdentifier", value: false },
+        { param: "onlyTokenizedUnits", value: false },
         { param: "orgUid", value: homeOrgUid },
         { param: "includeProjectInfoInSearch", value: true },
         { param: "filter", value: CONFIG().TOKENIZATION_ENGINE.UNITS_FILTER }
