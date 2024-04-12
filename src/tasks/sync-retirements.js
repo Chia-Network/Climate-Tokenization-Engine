@@ -56,6 +56,13 @@ const startSyncRetirementsTask = async () => {
       return;
     }
 
+    const syncStatus = await registry.getHomeOrgSyncStatus();
+    if (!syncStatus?.home_org_profile_synced) {
+      logger.warn(
+        "Home organization sync is not complete, skipping sync-retirements task"
+      );
+    }
+
     const lastProcessedHeight = await registry.getLastProcessedHeight();
     if (lastProcessedHeight == null) {
       logger.warn(
