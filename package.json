@@ -4,6 +4,9 @@
   "bin": "./src/server.js",
   "description": "",
   "main": "proxy.js",
+  "engines": {
+    "node": ">=20.16"
+  },
   "scripts": {
     "test": "jest --forceExit",
     "test-ci": "jest --ci",
