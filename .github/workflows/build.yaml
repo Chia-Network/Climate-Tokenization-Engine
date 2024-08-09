@@ -45,10 +45,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node 18.16
+      - name: Setup Node 20.16
         uses: actions/setup-node@v3
         with:
-          node-version: '18.16'
+          node-version: '20.16'
 
       - name: Ignore Husky
         run: npm pkg delete scripts.prepare
