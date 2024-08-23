@@ -47,6 +47,7 @@ app.use(errorHandler);
 app.use("/units/tokenized", proxy.getTokenizedUnits());
 app.use("/projects", proxy.getProjectsFromRegistry());
 app.use("/units/untokenized", proxy.getUntokenizedUnits());
+app.use("/organizations", proxy.getOrganizationsFromRegistry());
 
 // Routes
 app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);
