@@ -164,7 +164,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download Linux artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
@@ -206,43 +206,43 @@ jobs:
       - build
     steps:
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-windows-x64
           path: climate-tokenization-engine-windows-x64
 
       - name: Download MacOS installer artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-mac-installer
           path: climate-tokenization-engine-mac-installer
 
       - name: Download MacOS executable artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-macos-x64
           path: climate-tokenization-engine-macos-x64
 
       - name: Download Linux x64 artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-linux-x64
           path: climate-tokenization-engine-linux-x64
 
       - name: Download Linux ARM 64 artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-linux-arm64
           path: climate-tokenization-engine-linux-arm64
 
       - name: Download Linux x64 deb
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-linux-x64-deb
           path: climate-tokenization-engine-linux-x64-deb
 
       - name: Download Linux arm64 deb
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: climate-tokenization-engine-linux-arm64-deb
           path: climate-tokenization-engine-linux-arm64-deb
