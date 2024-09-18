@@ -90,6 +90,13 @@ const getUntokenizedUnits = () => {
         proxyReq.setHeader("x-api-key", CONFIG().CADT.API_KEY);
       }
     },
+    onProxyRes: async (proxyRes) => {
+      const homeOrgUid = await getHomeOrgUid();
+      if (homeOrgUid) {
+        proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
+        proxyRes.headers["x-org-uid"] = homeOrgUid;
+      }
+    },
   });
 };
 
