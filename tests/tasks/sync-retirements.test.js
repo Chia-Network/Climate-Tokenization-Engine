@@ -27,6 +27,7 @@ describe("Task: Sync Retirements", () => {
   let registrySplitUnitStub;
   let registryCommitStagingDataStub;
   let registryGetHomeOrgStub;
+  let registryGetHomeOrgSyncStatusStub;
 
   beforeEach(() => {
     nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
@@ -39,6 +40,7 @@ describe("Task: Sync Retirements", () => {
       .stub(registry, "setLastProcessedHeight")
       .resolves({});
 
+    registryGetHomeOrgSyncStatusStub = sinon.stub(registry, "getHomeOrgSyncStatus").resolves({ home_org_profile_synced: true });
     registryRetireUnitStub = sinon.stub(registry, "retireUnit").resolves();
     registrySplitUnitStub = sinon.stub(registry, "splitUnit").resolves();
     registryCommitStagingDataStub = sinon

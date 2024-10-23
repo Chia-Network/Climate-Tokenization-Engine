@@ -100,8 +100,33 @@ const getUntokenizedUnits = () => {
   });
 };
 
+const getOrganizationsFromRegistry = () => {
+  return createProxyMiddleware({
+    target: registryUri,
+    changeOrigin: true,
+    secure: false,
+    pathRewrite: async (path) => {
+      const homeOrgUid = await getHomeOrgUid();
+      return "/v1/organizations";
+    },
+    onProxyReq: (proxyReq) => {
+      if (CONFIG().CADT.API_KEY) {
+        proxyReq.setHeader("x-api-key", CONFIG().CADT.API_KEY);
+      }
+    },
+    onProxyRes: async (proxyRes) => {
+      const homeOrgUid = await getHomeOrgUid();
+      if (homeOrgUid) {
+        proxyRes.headers["Access-Control-Expose-Headers"] = "x-org-uid";
+        proxyRes.headers["x-org-uid"] = homeOrgUid;
+      }
+    },
+  });
+};
+
 module.exports = {
   getTokenizedUnits,
   getProjectsFromRegistry,
   getUntokenizedUnits,
+  getOrganizationsFromRegistry
 };
