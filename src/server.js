@@ -16,7 +16,7 @@ const {
   errorHandler,
   setOrgUidHeader,
   assertApiKey,
-  assertHomeOrgExists,
+  assertHomeOrgExists, setCoreRegistryModeHeader,
 } = require("./middleware");
 
 const scheduler = require("./tasks");
@@ -40,6 +40,7 @@ app.use(cors());
 
 app.use(assertHomeOrgExists);
 app.use(setOrgUidHeader);
+app.use(setCoreRegistryModeHeader);
 app.use(assertApiKey);
 app.use(errorHandler);
 
@@ -47,11 +48,12 @@ app.use(errorHandler);
 app.use("/units/tokenized", proxy.getTokenizedUnits());
 app.use("/projects", proxy.getProjectsFromRegistry());
 app.use("/units/untokenized", proxy.getUntokenizedUnits());
+app.use("/organizations", proxy.getOrganizationsFromRegistry());
 
 // Routes
 app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);
 app.post("/parse-detok-file", parseDetokFile);
-app.post("/confirm-detokanization", confirmDetokanization);
+app.post("/confirm-detokenization", confirmDetokanization);
 
 /**
  * Basic health check route.
