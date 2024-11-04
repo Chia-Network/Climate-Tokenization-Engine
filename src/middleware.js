@@ -45,6 +45,19 @@ const setOrgUidHeader = async (req, res, next) => {
   next();
 };
 
+/**
+ * Middleware to set the core registry mode header (t/f)
+ * @param {Object} req - The request object
+ * @param {Object} res - The response object
+ * @param {Function} next - The next middleware function
+ * @returns {Promise<void>}
+ */
+const setCoreRegistryModeHeader = async (req, res, next) => {
+  res.header("Access-Control-Expose-Headers", "x-core-registry-mode");
+  res.header("x-core-registry-mode", Boolean(CONFIG()?.GENERAL?.CORE_REGISTRY_MODE));
+  next();
+};
+
 const assertApiKey = (req, res, next) => {
   if (
     CONFIG().TOKENIZATION_ENGINE.API_KEY &&
@@ -94,4 +107,5 @@ module.exports = {
   setOrgUidHeader,
   assertApiKey,
   assertHomeOrgExists,
+  setCoreRegistryModeHeader
 };
