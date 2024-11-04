@@ -1,3 +1,16 @@
+## [1.3.22](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.21...1.3.22) (2024-11-04)
+
+
+### Features
+
+* added core-registry header ([1a953fa](https://github.com/Chia-Network/climate-tokenization-engine/commit/1a953fa6d79f3485b7f247147c2e388fcdb0bd56))
+* added organizations proxy ([935f4f8](https://github.com/Chia-Network/climate-tokenization-engine/commit/935f4f85a77aaa5f2c8ef42cca57a3cb3fa526f7))
+* app packaged as single application on node20 ([c67490f](https://github.com/Chia-Network/climate-tokenization-engine/commit/c67490f956857e4a1595321af09eaed44fe8f6a1))
+* bump to node v20 ([0571f98](https://github.com/Chia-Network/climate-tokenization-engine/commit/0571f989330b22157d335042ba5c40bd90532ab7))
+* check if home profile synced before retirement ([b46c57b](https://github.com/Chia-Network/climate-tokenization-engine/commit/b46c57be3096bc31f37c627194f4f1f892e00e43))
+
+
+
 ## [1.3.21](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.20...1.3.21) (2024-04-03)
 
 
