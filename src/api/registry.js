@@ -187,15 +187,15 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 
 
 const getHomeOrgSyncStatus = async () => {
-  logger.debug(`GET ${registryUri}/v1/organizations/sync_status`);
-  const response = await superagent.get(`${registryUri}/v1/organizations/sync_status`).set(maybeAppendRegistryApiKey());
+  logger.debug(`GET ${registryUri}/v1/organizations/status`);
+  const response = await superagent.get(`${registryUri}/v1/organizations/status`).set(maybeAppendRegistryApiKey());
 
   if (response.status === 403) {
     throw new Error("Registry API key is invalid, please check your config.yaml.");
   }
 
   return response.body;
-}
+};
 
 
 /**
