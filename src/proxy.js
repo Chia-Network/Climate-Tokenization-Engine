@@ -1,7 +1,8 @@
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const { createProxyMiddleware, fixRequestBody } = require("http-proxy-middleware");
 const { getHomeOrgUid } = require("./api/registry");
 const { updateQueryWithParam, generateUriForHostAndPort } = require("./utils");
 const { CONFIG } = require("./config");
+const { logger } = require("./logger");
 
 const registryUri = generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
@@ -124,9 +125,49 @@ const getOrganizationsFromRegistry = () => {
   });
 };
 
+const createAddressInAddressBook = () => {
+  return createProxyMiddleware({
+    target: registryUri,
+    changeOrigin: true,
+    secure: false,
+    pathRewrite: (path) => {
+      const currentUrl = new URL(`${registryUri}${path}`);
+      const newQuery = updateQueryWithParam(
+        currentUrl.search,
+      );
+      return `/v1/addressBook${newQuery}`;
+    },
+    onProxyReq: (proxyReq, req) => {
+      if (CONFIG().CADT.API_KEY) {
+        proxyReq.setHeader('x-api-key', CONFIG().CADT.API_KEY);
+      }
+      // @ts-ignore
+      fixRequestBody(proxyReq, req)
+    },
+    onProxyRes: async (proxyRes) => {
+      try {
+        const homeOrgUid = await getHomeOrgUid();
+        if (homeOrgUid) {
+          proxyRes.headers['Access-Control-Expose-Headers'] = 'x-org-uid';
+          proxyRes.headers['x-org-uid'] = homeOrgUid;
+        }
+      } catch (err) {
+        logger.error('Error in onProxyRes:', err.message);
+      }
+    },
+    onError: (err, req, res) => {
+      logger.error('Error encountered in proxy:', err.message);
+      // @ts-ignore
+      res.sendStatus(500);
+    },
+  });
+};
+
+
 module.exports = {
   getTokenizedUnits,
   getProjectsFromRegistry,
   getUntokenizedUnits,
-  getOrganizationsFromRegistry
+  getOrganizationsFromRegistry,
+  createAddressInAddressBook
 };
