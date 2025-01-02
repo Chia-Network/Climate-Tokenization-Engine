@@ -2,6 +2,7 @@ const { createProxyMiddleware, fixRequestBody } = require("http-proxy-middleware
 const { getHomeOrgUid } = require("./api/registry");
 const { updateQueryWithParam, generateUriForHostAndPort } = require("./utils");
 const { CONFIG } = require("./config");
+const { logger } = require("./logger");
 
 const registryUri = generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
@@ -130,7 +131,6 @@ const createAddressInAddressBook = () => {
     changeOrigin: true,
     secure: false,
     pathRewrite: (path) => {
-      console.log('Rewriting path:', path);
       const currentUrl = new URL(`${registryUri}${path}`);
       const newQuery = updateQueryWithParam(
         currentUrl.search,
@@ -138,30 +138,25 @@ const createAddressInAddressBook = () => {
       return `/v1/addressBook${newQuery}`;
     },
     onProxyReq: (proxyReq, req) => {
-      console.log('Proxying request to:', registryUri, proxyReq.path, proxyReq.method);
       if (CONFIG().CADT.API_KEY) {
         proxyReq.setHeader('x-api-key', CONFIG().CADT.API_KEY);
-        console.log('Added x-api-key header');
       }
       // @ts-ignore
       fixRequestBody(proxyReq, req)
     },
     onProxyRes: async (proxyRes) => {
       try {
-        console.log('Response received with status:', proxyRes.statusCode);
         const homeOrgUid = await getHomeOrgUid();
-        console.log('Home Org', homeOrgUid)
         if (homeOrgUid) {
           proxyRes.headers['Access-Control-Expose-Headers'] = 'x-org-uid';
           proxyRes.headers['x-org-uid'] = homeOrgUid;
-          console.log('Added custom response headers');
         }
       } catch (err) {
-        console.error('Error in onProxyRes:', err.message);
+        logger.error('Error in onProxyRes:', err.message);
       }
     },
     onError: (err, req, res) => {
-      console.error('Error encountered in proxy:', err.message);
+      logger.error('Error encountered in proxy:', err.message);
       // @ts-ignore
       res.sendStatus(500);
     },
