@@ -2,7 +2,6 @@ const { createProxyMiddleware, fixRequestBody } = require("http-proxy-middleware
 const { getHomeOrgUid } = require("./api/registry");
 const { updateQueryWithParam, generateUriForHostAndPort } = require("./utils");
 const { CONFIG } = require("./config");
-const { createAddress } = require("./api/address-book");
 
 const registryUri = generateUriForHostAndPort(
   CONFIG().CADT.PROTOCOL,
