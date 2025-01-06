@@ -292,7 +292,7 @@ jobs:
           zip -r climate-tokenization-engine-macos-binary-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip climate-tokenization-engine-macos-x64
 
       # RC release should not be set as latest
-      - name: Decide if release should be set as latest plus apt repo project
+      - name: Decide if release should be set as latest and set glue project
         id: is_latest
         shell: bash
         run: |
@@ -336,7 +336,6 @@ jobs:
           echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d "/" -f 2)" >>$GITHUB_OUTPUT
 
       - name: Trigger apt repo update
-        if: startsWith(github.ref, 'refs/tags/') && !contains( github.ref, '-rc')
         uses: Chia-Network/actions/github/glue@main
         with:
           json_data: '{"climate_tokenization_repo":"${{ steps.repo-name.outputs.REPO_NAME }}","application_name":"[\"climate-tokenization-engine\"]","release_version":"${{ steps.tag-name.outputs.TAGNAME }}","add_debian_version":"true","arm64":"available"}'
