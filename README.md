@@ -75,7 +75,7 @@ sudo systemctl enable climate-tokenization-engine@<USERNAME>
 
 Experimental code is released with a "release candidate" naming convention and can be found on the [releases](/releases) page with `-rc` in the version number. Not all of the release candidates will be stable and caution should be used.  
 
-Release candidates can be installed via `apt` using the instructions (above)[#debian-based-linux-distros-ubuntu-mint-etc] exept replace step 3 with the following:
+Release candidates can be installed via `apt` using the instructions (above)[#debian-based-linux-distros-ubuntu-mint-etc] except replace step 3 with the following:
 
 ```
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/chia.gpg] https://repo.chia.net/climate-tokenization-test/debian/ stable main" | sudo tee /etc/apt/sources.list.d/climate-tokenization-test.list > /dev/null
