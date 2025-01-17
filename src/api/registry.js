@@ -368,9 +368,9 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   try {
     await utils.waitFor(30000);
 
-    logger.debug(`GET ${registryUri}/v1/staging/hasPendingTransactions`);
+    logger.debug(`GET ${registryUri}/v1/staging/hasPendingCommits`);
     const response = await superagent
-      .get(`${registryUri}/v1/staging/hasPendingTransactions`)
+      .get(`${registryUri}/v1/staging/hasPendingCommits`)
       .set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -447,7 +447,8 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       }
     }
 
-    if (coreRegistryMode && (await confirmTokenRegistrationOnWarehouse())) {
+    const tokenRegistrationSucessful = await confirmTokenRegistrationOnWarehouse();
+    if (coreRegistryMode && tokenRegistrationSucessful) {
       await updateUnitMarketplaceIdentifierWithAssetId(
         warehouseUnitId,
         token.asset_id
