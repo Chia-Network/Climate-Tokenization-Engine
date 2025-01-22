@@ -5,6 +5,8 @@ const registry = require("../api/registry");
 const retirementExplorer = require("../api/retirement-explorer");
 const { logger } = require("../logger");
 const { CONFIG } = require("../config");
+const {getOrgMetaData} = require("../api/registry");
+const {parseSerialNumber} = require("../utils/helpers");
 
 let isTaskInProgress = false;
 
@@ -56,8 +58,8 @@ const startSyncRetirementsTask = async () => {
       return;
     }
 
-    const syncStatus = await registry.getHomeOrgSyncStatus();
-    if (!syncStatus?.home_org_profile_synced) {
+    const syncStatusResult = await registry.getHomeOrgSyncStatus();
+    if (!syncStatusResult?.status?.home_org_profile_synced) {
       logger.warn(
         "Home organization sync is not complete, skipping sync-retirements task"
       );
@@ -111,24 +113,36 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
         `Owned Retirement activities: ${JSON.stringify(retirements)}`
       );
 
+      let highestBlockHeightProcessed = 0;
       for (const activity of ownedRetirements) {
         // You can only autoretire your own units
         logger.info(`PROCESSING RETIREMENT ACTIVITY: ${activity.coin_id}`);
-        await processResult({
-          marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
-          amount: activity.amount / 1000,
-          beneficiaryName: activity.beneficiary_name,
-          beneficiaryAddress: activity.beneficiary_address,
-        });
-      }
 
-      const highestHeight = calcHighestActivityHeight(retirements);
+        try {
+          let unitUpdatedWithRetirement = await processRetirement({
+            homeOrgUid: homeOrg.orgUid,
+            activityBlockHeight: activity.height,
+            marketplaceIdentifier: activity.cw_unit.marketplaceIdentifier,
+            amount: activity.amount / 1000,
+            beneficiaryName: activity.beneficiary_name,
+            beneficiaryAddress: activity.beneficiary_address,
+          });
+
+          if (unitUpdatedWithRetirement && (activity.height > highestBlockHeightProcessed)){
+            highestBlockHeightProcessed = activity.height;
+          }
+        } catch (error) {
+          logger.error(`cannot process retirement activity for asset ${activity.cw_unit.marketplaceIdentifier}. 
+          Error: ${error}
+          Activity: ${JSON.stringify(activity)}`);
+        }
+      }
 
       // Only set the latest processed height if we actually processed something
       // This prevents us from setting the last processed height to the same height
       // if we don't have any units to retire and prevents an unneeded transaction
-      if (highestHeight >= minHeight) {
-        await registry.setLastProcessedHeight(highestHeight);
+      if (highestBlockHeightProcessed >= minHeight) {
+        await registry.setLastProcessedHeight(highestBlockHeightProcessed);
       }
 
       page++;
@@ -141,66 +155,83 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
 /**
  * Process retirement result.
  * @param {Object} params - Parameters.
+ * @param {string} params.homeOrgUid - the orgUid of the home organization.
+ * @param {number} params.activityBlockHeight - the orgUid of the home organization.
  * @param {string} params.marketplaceIdentifier - Marketplace Identifier.
  * @param {number} params.amount - Amount to retire.
  * @param {string} params.beneficiaryName - Beneficiary's name.
  * @param {string} params.beneficiaryAddress - Beneficiary's address.
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} representing whether the retirement was processed to CADT
  */
-const processResult = async ({
-  marketplaceIdentifier,
-  amount,
-  beneficiaryName,
-  beneficiaryAddress,
-}) => {
+const processRetirement = async ({
+                                   homeOrgUid,
+                                   activityBlockHeight,
+                                   marketplaceIdentifier,
+                                   amount,
+                                   beneficiaryName,
+                                   beneficiaryAddress,
+                                 }) => {
   try {
+
+    // need to wait here because the pending transaction could be updating the organizations retirement block height
     await registry.waitForRegistryDataSync();
     const unitBlocks = await registry.getAssetUnitBlocks(marketplaceIdentifier);
+    const homeOrgMetaData = await getOrgMetaData(homeOrgUid);
 
-    const units = unitBlocks
-      .filter((unit) => unit.unitStatus !== "Retired")
-      .sort((a, b) => b.unitCount - a.unitCount);
+    const sortedUnRetiredUnits = unitBlocks
+      .filter((unit) => {
+        let notRetired = unit.unitStatus !== "Retired";
+        let unitBlockNotProcessed = activityBlockHeight > homeOrgMetaData?.lastRetiredBlockHeight;
 
-    if (!units || units.length === 0) {
-      logger.task(`No units for ${marketplaceIdentifier}`);
-      return;
+        return notRetired && unitBlockNotProcessed;
+      })
+      .sort((unitA, unitB) => {
+        let unitCountDiff = unitB.unitCount - unitA.unitCount;
+        if (unitCountDiff === 0) {
+          let unitA_Block = parseSerialNumber(unitA.serialNumber);
+          let unitB_Block = parseSerialNumber(unitB.serialNumber);
+
+          return unitB_Block.unitBlockStart - unitA_Block.unitBlockStart;
+        }
+        return unitCountDiff;
+      });
+
+    if (!sortedUnRetiredUnits || sortedUnRetiredUnits.length === 0) {
+      logger.task(`No unit records eligible for retirement for token with marketplace identifier ${marketplaceIdentifier}`);
+      return false;
     }
 
-    const remainingAmountToRetire = await processUnits(
-      units,
+    await processUnits(
+      sortedUnRetiredUnits,
       amount,
       beneficiaryName,
       beneficiaryAddress
     );
 
-    if (remainingAmountToRetire > 0) {
-      await registry.deleteStagingData();
-      throw new Error("Total unitCount lower than needed retire amount.");
-    }
-
     await registry.commitStagingData();
     logger.task("Auto Retirement Process Complete");
+    return true;
   } catch (err) {
-    throw new Error("Could not retire unit block");
+    throw new Error(`Could not retire unit block. ${err}`);
   }
 };
 
 /**
- * Process individual units for retirement.
- * @param {Array<Object>} units - Array of unit blocks to be processed.
- * @param {number} amount - Amount to retire.
+ * Process individual sortedRetirementEligibleUnits for retirement.
+ * @param {Array<Object>} sortedRetirementEligibleUnits - Array of unit blocks to be processed.
+ * @param {number} totalAmountToRetire - Amount to retire.
  * @param {string} beneficiaryName - Beneficiary's name.
  * @param {string} beneficiaryAddress - Beneficiary's address.
  * @returns {Promise<number>}
  */
 const processUnits = async (
-  units,
-  amount,
+  sortedRetirementEligibleUnits,
+  totalAmountToRetire,
   beneficiaryName,
   beneficiaryAddress
 ) => {
-  let remainingAmountToRetire = amount;
-  for (const unit of units) {
+  let remainingAmountToRetire = totalAmountToRetire;
+  for (const unit of sortedRetirementEligibleUnits) {
     if (remainingAmountToRetire <= 0) {
       break;
     }
@@ -213,11 +244,11 @@ const processUnits = async (
       break;
     } else {
       logger.task(
-        `Retiring ${unitCount} units for ${unit.warehouseUnitId} with ${remainingAmountToRetire} remaining`
+        `attempting to retire ${unitCount} units for ${unit.warehouseUnitId} with ${remainingAmountToRetire} remaining`
       );
     }
 
-    if (unitCount <= remainingAmountToRetire) {
+    if (unitCount === totalAmountToRetire) {
       await registry.retireUnit(unit, beneficiaryName, beneficiaryAddress);
       remainingAmountToRetire -= unitCount;
     } else {
@@ -233,25 +264,6 @@ const processUnits = async (
   }
 
   return remainingAmountToRetire;
-};
-
-/**
- * Helper function to find the highest height among retirement activities.
- * @param {Array<Object>} activities - Array of retirement activities.
- * @returns {number} The highest block height.
- */
-const calcHighestActivityHeight = (activities) => {
-  let highestHeight = 0;
-
-  activities.forEach((activity) => {
-    const height = activity.height;
-
-    if (height > highestHeight) {
-      highestHeight = height;
-    }
-  });
-
-  return highestHeight;
 };
 
 module.exports = {
