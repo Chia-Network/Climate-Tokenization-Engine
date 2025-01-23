@@ -89,35 +89,25 @@ const sanitizeUnitForUpdate = (unit) => {
  *
  * @param {Object} unit - The unit to update
  * @returns {Promise<Object>} The response body
+ * @throws error on non 200 status code
  */
 const updateUnit = async (unit) => {
-  try {
-    logger.debug(`PUT ${registryUri}/v1/units`);
-    const cleanedUnit = sanitizeUnitForUpdate(unit);
-    const response = await superagent
-      .put(`${registryUri}/v1/units`)
-      .send(cleanedUnit)
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  logger.debug(`PUT ${registryUri}/v1/units`);
+  const cleanedUnit = sanitizeUnitForUpdate(unit);
+  const response = await superagent
+    .put(`${registryUri}/v1/units`)
+    .send(cleanedUnit)
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
-    }
-
-    return response?.body;
-  } catch (error) {
-    logger.error(`Could not update unit: ${error.message}`);
-
-    // Log additional information if present in the error object
-    if (error.response && error.response.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
-    }
-
-    return null;
+  if (response.status === 403) {
+    throw new Error(
+      "Registry API key is invalid, please check your config.yaml."
+    );
+  } else if (response.status !== 200) {
+    throw new Error(JSON.stringify(response.body));
   }
+
+  return response?.body;
 };
 
 /**
@@ -321,7 +311,7 @@ const setLastProcessedHeight = async (height) => {
     if (
       response.status !== 200 ||
       data.message !==
-        "Home org currently being updated, will be completed soon."
+      "Home org currently being updated, will be completed soon."
     ) {
       logger.fatal(
         `CRITICAL ERROR: Could not set last processed height in registry.`
@@ -764,12 +754,21 @@ const deleteStagingData = () => {
   return superagent.delete(`${registryUri}/v1/staging/clean`);
 };
 
+/**
+ * splits a given unit.
+ * @param {Object} unit - The unit to update
+ * @param {number} amount
+ * @param {string} beneficiaryName
+ * @param {string} beneficiaryAddress
+ * @returns {Promise<Object>} The response body
+ * @throws error on non 200 status code
+ */
 const splitUnit = async ({
-  unit,
-  amount,
-  beneficiaryName,
-  beneficiaryAddress,
-}) => {
+                           unit,
+                           amount,
+                           beneficiaryName,
+                           beneficiaryAddress,
+                         }) => {
   logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`);
 
   // Parse the serialNumberBlock
@@ -807,32 +806,21 @@ const splitUnit = async ({
     ],
   };
 
-  try {
-    logger.debug(`POST ${registryUri}/v1/units/split`);
-    const response = await superagent
-      .post(`${registryUri}/v1/units/split`)
-      .send(JSON.stringify(payload))
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  logger.debug(`POST ${registryUri}/v1/units/split`);
+  const response = await superagent
+    .post(`${registryUri}/v1/units/split`)
+    .send(JSON.stringify(payload))
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
-    }
-
-    return response.body;
-  } catch (error) {
-    logger.error(`Could not split unit on registry: ${error.message}`);
-
-    // Log additional information if present in the error object
-    if (error.response && error.response.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
-    }
-
-    return null;
+  if (response.status === 403) {
+    throw new Error(
+      "Registry API key is invalid, please check your config.yaml."
+    );
+  } else if (response.status !== 200) {
+    throw new Error(JSON.stringify(response.body));
   }
+
+  return response.body;
 };
 
 module.exports = {

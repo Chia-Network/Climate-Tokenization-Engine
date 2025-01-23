@@ -33,8 +33,8 @@ const task = new Task("sync-retirements", async () => {
 const job = new SimpleIntervalJob(
   {
     seconds:
-      CONFIG().TOKENIZATION_ENGINE.TASKS
-        .SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS,
+    CONFIG().TOKENIZATION_ENGINE.TASKS
+      .SYNC_RETIREMENTS_TO_REGISTRY_INTERVAL_SECONDS,
     runImmediately: true,
   },
   task,
@@ -176,12 +176,12 @@ const processRetirement = async ({
     // need to wait here because the pending transaction could be updating the organizations retirement block height
     await registry.waitForRegistryDataSync();
     const unitBlocks = await registry.getAssetUnitBlocks(marketplaceIdentifier);
-    const homeOrgMetaData = await getOrgMetaData(homeOrgUid);
+    const homeOrgHighestProcessedBlockHeight = await registry.getLastProcessedHeight();
 
     const sortedUnRetiredUnits = unitBlocks
       .filter((unit) => {
         let notRetired = unit.unitStatus !== "Retired";
-        let unitBlockNotProcessed = activityBlockHeight > homeOrgMetaData?.lastRetiredBlockHeight;
+        let unitBlockNotProcessed = activityBlockHeight > homeOrgHighestProcessedBlockHeight;
 
         return notRetired && unitBlockNotProcessed;
       })
@@ -244,11 +244,11 @@ const processUnits = async (
       break;
     } else {
       logger.task(
-        `attempting to retire ${unitCount} units for ${unit.warehouseUnitId} with ${remainingAmountToRetire} remaining`
+        `attempting to retire ${remainingAmountToRetire} using ${unitCount} units for ${unit.warehouseUnitId}`
       );
     }
 
-    if (unitCount === totalAmountToRetire) {
+    if (unitCount <= remainingAmountToRetire) {
       await registry.retireUnit(unit, beneficiaryName, beneficiaryAddress);
       remainingAmountToRetire -= unitCount;
     } else {
