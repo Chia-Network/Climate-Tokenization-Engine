@@ -1,5 +1,5 @@
 const nock = require("nock");
-const { getRetirementActivities } = require("../src/api/retirement-explorer");
+const { getHomeOrgRetirementActivities } = require("../src/api/retirement-explorer");
 const { CONFIG } = require("../src/config");
 const { generateUriForHostAndPort } = require("../src/utils");
 
@@ -26,7 +26,7 @@ describe("getRetirementActivities", () => {
   });
 
   it('should filter out activities that do not have a mode of "PERMISSIONLESS_RETIREMENT"', async () => {
-    const result = await getRetirementActivities(1, 10, 0);
+    const result = await getHomeOrgRetirementActivities(1, 10, 0);
     expect(result).toEqual([
       { mode: "PERMISSIONLESS_RETIREMENT", someField: "someValue" },
     ]);
@@ -36,7 +36,7 @@ describe("getRetirementActivities", () => {
     nock.cleanAll();
     nock(apiEndpoint).get("/retirement-activities").replyWithError("API Error");
 
-    const result = await getRetirementActivities(1, 10, 0);
+    const result = await getHomeOrgRetirementActivities(1, 10, 0);
     expect(result).toEqual([]);
   });
 });

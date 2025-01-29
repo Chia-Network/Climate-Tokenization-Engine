@@ -15,6 +15,12 @@ const registryUri = utils.generateUriForHostAndPort(
   CONFIG().CADT.PORT
 );
 
+const homeOrgUidCachePeriodMilliSeconds = 60000;
+let homeOrgUidCache = {
+  orgUid: null,
+  timeLastFetched: Date.now(),
+};
+
 /**
  * Appends Registry API Key to the request headers if available.
  *
@@ -144,13 +150,13 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   let pageCount = 1;
   try {
     do {
-      logger.debug(`Fetching page ${currentPage} for marketplaceIdentifier: ${marketplaceIdentifier}`);
+      logger.debug(`Fetching unit records page ${currentPage} of ${pageCount} for marketplaceIdentifier: ${marketplaceIdentifier}`);
       const response = await superagent
         .get(`${registryUri}/v1/units`)
         .query({
           filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
           page: currentPage,
-          limit: 2,
+          limit: 100,
         })
         .set(maybeAppendRegistryApiKey());
 
@@ -226,17 +232,27 @@ const getLastProcessedHeight = async () => {
 };
 
 /**
- * Gets the home organization UID.
+ * Gets the cached home organization UID. set the cache time with {@link homeOrgUidCachePeriodMilliSeconds}
  *
  * @returns {Promise<string|null>} The home organization UID or null
  */
 const getHomeOrgUid = async () => {
-  const homeOrg = await getHomeOrg();
-  return homeOrg ? homeOrg.orgUid : null;
+  if (Date.now() > homeOrgUidCache.timeLastFetched + homeOrgUidCachePeriodMilliSeconds) {
+    homeOrgUidCache.orgUid = null;
+  }
+
+  if (!homeOrgUidCache.orgUid) {
+    const homeOrg = await getHomeOrg();
+    homeOrgUidCache.orgUid = homeOrg?.orgUid;
+    homeOrgUidCache.timeLastFetched = Date.now();
+    return homeOrgUidCache.orgUid;
+  } else {
+    return homeOrgUidCache.orgUid;
+  }
 };
 
 /**
- * Gets the home organization.
+ * Gets the home organization. If you just need the OrgUid, use {@link getHomeOrgUid} which is cached
  *
  * @returns {Promise<Object|null>} The home organization or null
  */

@@ -19,10 +19,13 @@ const task = new Task("sync-retirements", async () => {
       logger.task("Starting sync-retirements task");
       isTaskInProgress = true;
       await startSyncRetirementsTask();
+      logger.task(`sync registries task function has completed. task exiting`);
+      isTaskInProgress = false;
+    } else {
+      logger.debug(`sync registries task is currently in progress. skipping this invocation`);
     }
   } catch (error) {
     logger.error(`Error in sync-retirements task: ${error.message}`);
-  } finally {
     isTaskInProgress = false;
   }
 });
@@ -89,7 +92,7 @@ const getAndProcessActivities = async (homeOrg, minHeight = 0) => {
     let page = 1;
     const limit = 10;
     while (true) {
-      const retirements = await retirementExplorer.getRetirementActivities(
+      const retirements = await retirementExplorer.getHomeOrgRetirementActivities(
         page,
         limit,
         minHeight
