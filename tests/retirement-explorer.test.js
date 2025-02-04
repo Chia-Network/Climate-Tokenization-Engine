@@ -9,7 +9,7 @@ const retirementExplorerUri = generateUriForHostAndPort(
   CONFIG().RETIREMENT_EXPLORER.PORT
 );
 
-describe("getRetirementActivities", () => {
+describe("getHomeOrgRetirementActivities", () => {
   const apiEndpoint = retirementExplorerUri;
   const mockResponse = {
     activities: [
