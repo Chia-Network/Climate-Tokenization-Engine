@@ -33,14 +33,14 @@ describe("Task: Sync Retirements", () => {
     nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
 
     retirementExplorerGetRetirementActivitiesStub = sinon
-      .stub(retirementExplorer, "getRetirementActivities")
+      .stub(retirementExplorer, "getHomeOrgRetirementActivities")
       .resolves([]);
 
     registrySetLastProcessedHeightStub = sinon
       .stub(registry, "setLastProcessedHeight")
       .resolves({});
 
-    registryGetHomeOrgSyncStatusStub = sinon.stub(registry, "getHomeOrgSyncStatus").resolves({ home_org_profile_synced: true });
+    registryGetHomeOrgSyncStatusStub = sinon.stub(registry, "getHomeOrgSyncStatus").resolves({ status: {home_org_profile_synced: true} });
     registryRetireUnitStub = sinon.stub(registry, "retireUnit").resolves();
     registrySplitUnitStub = sinon.stub(registry, "splitUnit").resolves();
     registryCommitStagingDataStub = sinon
@@ -167,7 +167,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
@@ -214,16 +214,13 @@ describe("Task: Sync Retirements", () => {
     // Run the method under test
     await syncRetirements.startSyncRetirementsTask();
 
-    expect(taskSpy.calledWith("No units for TEST_MARKETPLACE_IDENTIFIER")).to.be
+    expect(taskSpy.calledWith("No unit records eligible for retirement for token with marketplace identifier TEST_MARKETPLACE_IDENTIFIER")).to.be
       .true;
 
     expect(registryRetireUnitStub.called).to.be.false;
     expect(registrySplitUnitStub.called).to.be.false;
 
-    expect(registrySetLastProcessedHeightStub.called).to.be.true;
-
-    // make sure just the highest block is recorded
-    expect(registrySetLastProcessedHeightStub.args[0][0]).to.equal(99999);
+    expect(registrySetLastProcessedHeightStub.called).to.be.false;
   });
 
   it("writes the lastProcessedHeight to the registry when the retirments have been processed", () => {});
@@ -253,7 +250,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
@@ -301,7 +298,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
@@ -322,7 +319,7 @@ describe("Task: Sync Retirements", () => {
         amount: 5000,
         beneficiary_name: "TEST_BENEFICIARY_NAME",
         beneficiary_address: "TEST_BENEFICIARY_ADDRESS",
-        height: 12344,
+        height: 12346,
         mode: "PERMISSIONLESS_RETIREMENT",
         cw_unit: {
           marketplaceIdentifier: "TEST_MARKETPLACE_IDENTIFIER",
@@ -369,6 +366,7 @@ describe("Task: Sync Retirements", () => {
     );
 
     expect(registryRetireUnitStub.calledOnce).to.be.true;
+    expect(registrySplitUnitStub.calledOnce).to.be.true;
 
     expect(registryRetireUnitStub.args[0][0]).to.equal(unretiredUnitAfterSplit);
     expect(registryRetireUnitStub.args[0][1]).to.equal("TEST_BENEFICIARY_NAME");

@@ -26,7 +26,7 @@ jobs:
           - runs-on: ubuntu-latest
             artifact-name: climate-tokenization-engine-linux-x64
             build-command: npm run create-linux-x64-dist
-          - runs-on: [Linux, ARM64]
+          - runs-on: [ubuntu-22.04-arm]
             artifact-name: climate-tokenization-engine-linux-arm64
             build-command: npm run create-linux-arm64-dist
           - runs-on: macos-latest
@@ -210,13 +210,13 @@ jobs:
           CLIMATE_TOKENIZATION_ENGINE_VERSION: ${{ steps.tag-name.outputs.TAGNAME }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          pip install j2cli
+          pip install jinjanator
           CLI_DEB_BASE="climate-tokenization-engine_${{ steps.tag-name.outputs.TAGNAME }}-1_${PLATFORM}"
           mkdir -p "deb/$CLI_DEB_BASE/opt/climate-tokenization-engine"
           mkdir -p "deb/$CLI_DEB_BASE/usr/bin"
           mkdir -p "deb/$CLI_DEB_BASE/etc/systemd/system"
           mkdir -p "deb/$CLI_DEB_BASE/DEBIAN"
-          j2 -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
+          jinjanate -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
           cp -r ${{ matrix.name }}/* "deb/$CLI_DEB_BASE/opt/climate-tokenization-engine/"
           cp build-scripts/deb/climate-tokenization-engine@.service deb/$CLI_DEB_BASE/etc/systemd/system/climate-tokenization-engine@.service
           chmod +x deb/$CLI_DEB_BASE/opt/climate-tokenization-engine/climate-tokenization-engine
