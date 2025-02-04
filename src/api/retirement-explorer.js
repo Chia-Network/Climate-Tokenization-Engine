@@ -1,6 +1,7 @@
 const superagent = require("superagent");
 const { logger } = require("../logger");
 const { CONFIG } = require("../config");
+const registry = require("../api/registry");
 
 const { generateUriForHostAndPort } = require("../utils");
 
@@ -30,7 +31,7 @@ const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
  * @param {number} minHeight - Minimum block height to start.
  * @returns {Promise<Object>} - A promise that resolves to an array of retirement activities.
  */
-const getRetirementActivities = async (page, limit, minHeight) => {
+const getHomeOrgRetirementActivities = async (page, limit, minHeight) => {
   try {
     logger.debug(`GET ${retirementExplorerUri}/v1/activities`);
     const response = await superagent
@@ -38,6 +39,7 @@ const getRetirementActivities = async (page, limit, minHeight) => {
       .query({
         page,
         limit,
+        org_uid: await registry.getHomeOrgUid(),
         minHeight: Number(minHeight) + 1,
         sort: "asc",
       })
@@ -72,5 +74,5 @@ const getRetirementActivities = async (page, limit, minHeight) => {
 };
 
 module.exports = {
-  getRetirementActivities,
+  getHomeOrgRetirementActivities,
 };
