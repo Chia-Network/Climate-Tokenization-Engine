@@ -33,7 +33,7 @@ describe("Task: Sync Retirements", () => {
     nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
 
     retirementExplorerGetRetirementActivitiesStub = sinon
-      .stub(retirementExplorer, "getRetirementActivities")
+      .stub(retirementExplorer, "getHomeOrgRetirementActivities")
       .resolves([]);
 
     registrySetLastProcessedHeightStub = sinon
@@ -167,7 +167,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
@@ -250,7 +250,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
@@ -298,7 +298,7 @@ describe("Task: Sync Retirements", () => {
     retirementExplorerGetRetirementActivitiesStub.restore();
     retirementExplorerGetRetirementActivitiesStub = sinon.stub(
       retirementExplorer,
-      "getRetirementActivities"
+      "getHomeOrgRetirementActivities"
     );
 
     retirementExplorerGetRetirementActivitiesStub.onFirstCall().resolves([
