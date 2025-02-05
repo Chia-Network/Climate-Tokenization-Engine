@@ -33,15 +33,13 @@ const maybeAppendRetirementExplorerApiKey = (headers = {}) => {
  */
 const getHomeOrgRetirementActivities = async (page, limit, minHeight) => {
   try {
-    const homeOrgUid = await registry.getHomeOrgUid();
-
     logger.debug(`GET ${retirementExplorerUri}/v1/activities`);
     const response = await superagent
       .get(`${retirementExplorerUri}/v1/activities`)
       .query({
         page,
         limit,
-        org_uid: homeOrgUid,
+        org_uid: await registry.getHomeOrgUid(),
         minHeight: Number(minHeight) + 1,
         sort: "asc",
       })
