@@ -59,14 +59,12 @@ const setCoreRegistryModeHeader = async (req, res, next) => {
 };
 
 const assertApiKey = (req, res, next) => {
-  const configApiKey = String(CONFIG().TOKENIZATION_ENGINE.API_KEY);
-
   if (
-    configApiKey &&
-    configApiKey !== ""
+    CONFIG().TOKENIZATION_ENGINE.API_KEY &&
+    CONFIG().TOKENIZATION_ENGINE.API_KEY !== ""
   ) {
-    const reqApiKey = req.header("x-api-key");
-    if (configApiKey === reqApiKey) {
+    const apikey = req.header("x-api-key");
+    if (CONFIG().TOKENIZATION_ENGINE.API_KEY === apikey) {
       next();
     } else {
       res.status(403).json({
