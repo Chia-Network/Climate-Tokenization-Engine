@@ -2,11 +2,19 @@ const nock = require("nock");
 const { getHomeOrgRetirementActivities } = require("../src/api/retirement-explorer");
 const { CONFIG } = require("../src/config");
 const { generateUriForHostAndPort } = require("../src/utils");
+const HomeOrgMock = require("./data/HomeOrgMock");
+const OrganizationsMock = require("./data/OrganizationsMock");
 
 const retirementExplorerUri = generateUriForHostAndPort(
   CONFIG().RETIREMENT_EXPLORER.PROTOCOL,
   CONFIG().RETIREMENT_EXPLORER.HOST,
   CONFIG().RETIREMENT_EXPLORER.PORT
+);
+
+const registryUri = generateUriForHostAndPort(
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
 );
 
 describe("getHomeOrgRetirementActivities", () => {
@@ -21,8 +29,10 @@ describe("getHomeOrgRetirementActivities", () => {
   beforeEach(() => {
     nock(apiEndpoint)
       .get("/v1/activities")
-      .query({ page: 1, limit: 10, org_uid: "a9d374baa8ced8b7a4add2a23f35f430fd7a3c99d1480d762e0b40572db4b024", minHeight: 1, sort: "asc" })
+      .query({ page: 1, limit: 10, org_uid: HomeOrgMock.orgUid, minHeight: 1, sort: "asc" })
       .reply(200, mockResponse);
+
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
   });
 
   it('should filter out activities that do not have a mode of "PERMISSIONLESS_RETIREMENT"', async () => {
