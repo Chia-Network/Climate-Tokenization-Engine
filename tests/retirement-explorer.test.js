@@ -1,7 +1,9 @@
 const nock = require("nock");
-const { getRetirementActivities } = require("../src/api/retirement-explorer");
+const { getHomeOrgRetirementActivities } = require("../src/api/retirement-explorer");
 const { CONFIG } = require("../src/config");
 const { generateUriForHostAndPort } = require("../src/utils");
+const HomeOrgMock = require("./data/HomeOrgMock");
+const OrganizationsMock = require("./data/OrganizationsMock");
 
 const retirementExplorerUri = generateUriForHostAndPort(
   CONFIG().RETIREMENT_EXPLORER.PROTOCOL,
@@ -9,7 +11,13 @@ const retirementExplorerUri = generateUriForHostAndPort(
   CONFIG().RETIREMENT_EXPLORER.PORT
 );
 
-describe("getRetirementActivities", () => {
+const registryUri = generateUriForHostAndPort(
+  CONFIG().CADT.PROTOCOL,
+  CONFIG().CADT.HOST,
+  CONFIG().CADT.PORT
+);
+
+describe("getHomeOrgRetirementActivities", () => {
   const apiEndpoint = retirementExplorerUri;
   const mockResponse = {
     activities: [
@@ -21,12 +29,14 @@ describe("getRetirementActivities", () => {
   beforeEach(() => {
     nock(apiEndpoint)
       .get("/v1/activities")
-      .query({ page: 1, limit: 10, minHeight: 1, sort: "asc" })
+      .query({ page: 1, limit: 10, org_uid: HomeOrgMock.orgUid, minHeight: 1, sort: "asc" })
       .reply(200, mockResponse);
+
+    nock(registryUri).get("/v1/organizations").reply(200, OrganizationsMock);
   });
 
   it('should filter out activities that do not have a mode of "PERMISSIONLESS_RETIREMENT"', async () => {
-    const result = await getRetirementActivities(1, 10, 0);
+    const result = await getHomeOrgRetirementActivities(1, 10, 0);
     expect(result).toEqual([
       { mode: "PERMISSIONLESS_RETIREMENT", someField: "someValue" },
     ]);
@@ -36,7 +46,7 @@ describe("getRetirementActivities", () => {
     nock.cleanAll();
     nock(apiEndpoint).get("/retirement-activities").replyWithError("API Error");
 
-    const result = await getRetirementActivities(1, 10, 0);
+    const result = await getHomeOrgRetirementActivities(1, 10, 0);
     expect(result).toEqual([]);
   });
 });

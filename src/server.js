@@ -49,6 +49,7 @@ app.use("/units/tokenized", proxy.getTokenizedUnits());
 app.use("/projects", proxy.getProjectsFromRegistry());
 app.use("/units/untokenized", proxy.getUntokenizedUnits());
 app.use("/organizations", proxy.getOrganizationsFromRegistry());
+app.use("/address-book", proxy.createAddressInAddressBook());
 
 // Routes
 app.post("/tokenize", validator.body(tokenizeUnitSchema), tokenizeUnit);

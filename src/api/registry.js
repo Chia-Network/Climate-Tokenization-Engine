@@ -15,6 +15,12 @@ const registryUri = utils.generateUriForHostAndPort(
   CONFIG().CADT.PORT
 );
 
+const homeOrgUidCachePeriodMilliSeconds = 60000;
+let homeOrgUidCache = {
+  orgUid: null,
+  timeLastFetched: Date.now(),
+};
+
 /**
  * Appends Registry API Key to the request headers if available.
  *
@@ -89,35 +95,25 @@ const sanitizeUnitForUpdate = (unit) => {
  *
  * @param {Object} unit - The unit to update
  * @returns {Promise<Object>} The response body
+ * @throws error on non 200 status code
  */
 const updateUnit = async (unit) => {
-  try {
-    logger.debug(`PUT ${registryUri}/v1/units`);
-    const cleanedUnit = sanitizeUnitForUpdate(unit);
-    const response = await superagent
-      .put(`${registryUri}/v1/units`)
-      .send(cleanedUnit)
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  logger.debug(`PUT ${registryUri}/v1/units`);
+  const cleanedUnit = sanitizeUnitForUpdate(unit);
+  const response = await superagent
+    .put(`${registryUri}/v1/units`)
+    .send(cleanedUnit)
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
-    }
-
-    return response?.body;
-  } catch (error) {
-    logger.error(`Could not update unit: ${error.message}`);
-
-    // Log additional information if present in the error object
-    if (error.response && error.response.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
-    }
-
-    return null;
+  if (response.status === 403) {
+    throw new Error(
+      "Registry API key is invalid, please check your config.yaml."
+    );
+  } else if (response.status !== 200) {
+    throw new Error(JSON.stringify(response.body));
   }
+
+  return response?.body;
 };
 
 /**
@@ -154,13 +150,13 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
   let pageCount = 1;
   try {
     do {
-      logger.debug(`Fetching page ${currentPage} for marketplaceIdentifier: ${marketplaceIdentifier}`);
+      logger.debug(`Fetching unit records page ${currentPage} of ${pageCount} for marketplaceIdentifier: ${marketplaceIdentifier}`);
       const response = await superagent
         .get(`${registryUri}/v1/units`)
         .query({
           filter: `marketplaceIdentifier:${marketplaceIdentifier}:eq`,
           page: currentPage,
-          limit: 2,
+          limit: 100,
         })
         .set(maybeAppendRegistryApiKey());
 
@@ -187,15 +183,15 @@ const getAssetUnitBlocks = async (marketplaceIdentifier) => {
 
 
 const getHomeOrgSyncStatus = async () => {
-  logger.debug(`GET ${registryUri}/v1/organizations/sync_status`);
-  const response = await superagent.get(`${registryUri}/v1/organizations/sync_status`).set(maybeAppendRegistryApiKey());
+  logger.debug(`GET ${registryUri}/v1/organizations/status`);
+  const response = await superagent.get(`${registryUri}/v1/organizations/status`).set(maybeAppendRegistryApiKey());
 
   if (response.status === 403) {
     throw new Error("Registry API key is invalid, please check your config.yaml.");
   }
 
   return response.body;
-}
+};
 
 
 /**
@@ -236,17 +232,27 @@ const getLastProcessedHeight = async () => {
 };
 
 /**
- * Gets the home organization UID.
+ * Gets the cached home organization UID. set the cache time with {@link homeOrgUidCachePeriodMilliSeconds}
  *
  * @returns {Promise<string|null>} The home organization UID or null
  */
 const getHomeOrgUid = async () => {
-  const homeOrg = await getHomeOrg();
-  return homeOrg ? homeOrg.orgUid : null;
+  if (Date.now() > homeOrgUidCache.timeLastFetched + homeOrgUidCachePeriodMilliSeconds) {
+    homeOrgUidCache.orgUid = null;
+  }
+
+  if (!homeOrgUidCache.orgUid) {
+    const homeOrg = await getHomeOrg();
+    homeOrgUidCache.orgUid = homeOrg?.orgUid;
+    homeOrgUidCache.timeLastFetched = Date.now();
+    return homeOrgUidCache.orgUid;
+  } else {
+    return homeOrgUidCache.orgUid;
+  }
 };
 
 /**
- * Gets the home organization.
+ * Gets the home organization. If you just need the OrgUid, use {@link getHomeOrgUid} which is cached
  *
  * @returns {Promise<Object|null>} The home organization or null
  */
@@ -321,7 +327,7 @@ const setLastProcessedHeight = async (height) => {
     if (
       response.status !== 200 ||
       data.message !==
-        "Home org currently being updated, will be completed soon."
+      "Home org currently being updated, will be completed soon."
     ) {
       logger.fatal(
         `CRITICAL ERROR: Could not set last processed height in registry.`
@@ -368,9 +374,9 @@ const confirmTokenRegistrationOnWarehouse = async (retry = 0) => {
   try {
     await utils.waitFor(30000);
 
-    logger.debug(`GET ${registryUri}/v1/staging/hasPendingTransactions`);
+    logger.debug(`GET ${registryUri}/v1/staging/hasPendingCommits`);
     const response = await superagent
-      .get(`${registryUri}/v1/staging/hasPendingTransactions`)
+      .get(`${registryUri}/v1/staging/hasPendingCommits`)
       .set(maybeAppendRegistryApiKey());
 
     if (response.status === 403) {
@@ -447,7 +453,8 @@ const registerTokenCreationOnRegistry = async (token, warehouseUnitId) => {
       }
     }
 
-    if (coreRegistryMode && (await confirmTokenRegistrationOnWarehouse())) {
+    const tokenRegistrationSucessful = await confirmTokenRegistrationOnWarehouse();
+    if (coreRegistryMode && tokenRegistrationSucessful) {
       await updateUnitMarketplaceIdentifierWithAssetId(
         warehouseUnitId,
         token.asset_id
@@ -763,12 +770,21 @@ const deleteStagingData = () => {
   return superagent.delete(`${registryUri}/v1/staging/clean`);
 };
 
+/**
+ * splits a given unit.
+ * @param {Object} unit - The unit to update
+ * @param {number} amount
+ * @param {string} beneficiaryName
+ * @param {string} beneficiaryAddress
+ * @returns {Promise<Object>} The response body
+ * @throws error on non 200 status code
+ */
 const splitUnit = async ({
-  unit,
-  amount,
-  beneficiaryName,
-  beneficiaryAddress,
-}) => {
+                           unit,
+                           amount,
+                           beneficiaryName,
+                           beneficiaryAddress,
+                         }) => {
   logger.info(`Splitting unit ${unit.warehouseUnitId} by ${amount}`);
 
   // Parse the serialNumberBlock
@@ -806,32 +822,21 @@ const splitUnit = async ({
     ],
   };
 
-  try {
-    logger.debug(`POST ${registryUri}/v1/units/split`);
-    const response = await superagent
-      .post(`${registryUri}/v1/units/split`)
-      .send(JSON.stringify(payload))
-      .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
+  logger.debug(`POST ${registryUri}/v1/units/split`);
+  const response = await superagent
+    .post(`${registryUri}/v1/units/split`)
+    .send(JSON.stringify(payload))
+    .set(maybeAppendRegistryApiKey({ "Content-Type": "application/json" }));
 
-    if (response.status === 403) {
-      throw new Error(
-        "Registry API key is invalid, please check your config.yaml."
-      );
-    }
-
-    return response.body;
-  } catch (error) {
-    logger.error(`Could not split unit on registry: ${error.message}`);
-
-    // Log additional information if present in the error object
-    if (error.response && error.response.body) {
-      logger.error(
-        `Additional error details: ${JSON.stringify(error.response.body)}`
-      );
-    }
-
-    return null;
+  if (response.status === 403) {
+    throw new Error(
+      "Registry API key is invalid, please check your config.yaml."
+    );
+  } else if (response.status !== 200) {
+    throw new Error(JSON.stringify(response.body));
   }
+
+  return response.body;
 };
 
 module.exports = {
