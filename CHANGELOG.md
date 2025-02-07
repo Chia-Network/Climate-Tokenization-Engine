@@ -1,3 +1,50 @@
+## [1.3.23](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.23-rc18...1.3.23) (2025-02-07)
+
+
+
+## [1.3.22](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.21...1.3.22) (2024-11-04)
+
+
+
+## [1.3.21](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.20...1.3.21) (2024-04-03)
+
+
+
+## [1.3.20](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.19...1.3.20) (2024-03-13)
+
+
+
+## [1.3.23-rc17](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.23-rc16...1.3.23-rc17) (2025-02-05)
+
+
+### Bug Fixes
+
+* explorer test ([f56adda](https://github.com/Chia-Network/climate-tokenization-engine/commit/f56adda1628ce4d3ac32a2c897fe48f560c9e1cd))
+* failing tests part 2 ([120c1ce](https://github.com/Chia-Network/climate-tokenization-engine/commit/120c1ced4764bb401a69c5db80ba65067da2dbbc))
+* failing tests part 2 ([fea4977](https://github.com/Chia-Network/climate-tokenization-engine/commit/fea4977e553d2db532f02ad2e70795f2323f2054))
+* over-calling explorer activities endpoint ([1c72d96](https://github.com/Chia-Network/climate-tokenization-engine/commit/1c72d962cabb59560bcb999bdbeda305b827d112))
+* retirements task ([8479d96](https://github.com/Chia-Network/climate-tokenization-engine/commit/8479d96f7281048fdd0fe72de64be2c65cbeabdf))
+* tests ([2a6c457](https://github.com/Chia-Network/climate-tokenization-engine/commit/2a6c457919c8dc9a280f4e981d0fc153a55db218))
+
+
+
+## [1.3.23-rc11](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.23-rc10...1.3.23-rc11) (2025-01-17)
+
+
+### Bug Fixes
+
+* cadt commits endpoint path ([c383513](https://github.com/Chia-Network/climate-tokenization-engine/commit/c383513d263d3ce11fa0302a2aab169561f74ed6))
+* incorrect resource url for cadt organizations sync status ([5088617](https://github.com/Chia-Network/climate-tokenization-engine/commit/5088617370ffcfb077fe9b6efd0cd76b98b322b0))
+* remove unused import and func ([46202ec](https://github.com/Chia-Network/climate-tokenization-engine/commit/46202eca8fce83ada0e3f925a143c04b9465bb45))
+
+
+### Features
+
+* add apple ARM package target ([28cd30a](https://github.com/Chia-Network/climate-tokenization-engine/commit/28cd30a73729f2e8630b21986f3a3548d7cdcb56))
+* creae proxy for address book ([5884dd8](https://github.com/Chia-Network/climate-tokenization-engine/commit/5884dd81af38db8d346c329926f35a8213bea7f9))
+
+
+
 ## [1.3.22](https://github.com/Chia-Network/climate-tokenization-engine/compare/1.3.21...1.3.22) (2024-11-04)
 
 
