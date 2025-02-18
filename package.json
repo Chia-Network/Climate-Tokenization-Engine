@@ -55,7 +55,7 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^5.16.1",
+    "@yao-pkg/pkg": "^6.3.1",
     "chai": "^4.5.0",
     "cors": "^2.8.5",
     "jest": "^27.5.1",
